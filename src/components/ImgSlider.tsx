@@ -18,7 +18,7 @@ export const ImgSlider = () => {
   ];
 
   return (
-    <div className="slide-container h-full pr-5 pl-5">
+    <div className="slide-container">
       <Zoom scale={1.1} duration={1500} pauseOnHover={false}>
         {images.map((each, index) => (
           <div
@@ -26,7 +26,8 @@ export const ImgSlider = () => {
             className="flex justify-center items-center h-[calc(100vh-7.25rem)]"
           >
             <img
-              className="flex justify-center items-center h-[calc(100vh-7.25rem)] min-w-fit"
+              // className="flex justify-center items-center h-[calc(100vh-7.25rem)] min-w-fit"
+              className="flex justify-center items-center min-w-fit"
               // key={index}
               alt=""
               src={each}
