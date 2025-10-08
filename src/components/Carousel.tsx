@@ -16,9 +16,9 @@ const images = [
 
 export default function Carousel() {
   const [current, setCurrent] = useState(0);
-
+  // Auto slide every 3 seconds
   useEffect(() => {
-    const interval = setInterval(nextSlide, 3000);
+    const interval = setInterval(() => nextSlide(), 3000);
     return () => clearInterval(interval);
   }, [current]);
 
@@ -31,8 +31,7 @@ export default function Carousel() {
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {/* Slides */}
+    <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
       <div
         className="flex transition-transform duration-700 ease-in-out h-full"
         style={{ transform: `translateX(-${current * 100}%)` }}
@@ -40,18 +39,18 @@ export default function Carousel() {
         {images.map((src, index) => (
           <div
             key={index}
-            className="w-full h-full flex-shrink-0 flex items-center justify-center bg-black"
+            className="w-full h-full flex-shrink-0 flex items-center justify-center"
           >
             <img
               src={src}
               alt={`Slide ${index + 1}`}
-              className="w-full h-full object-contain"
+              className="max-w-full max-h-full object-contain"
             />
           </div>
         ))}
       </div>
 
-      {/* Arrows */}
+      {/* Buttons */}
       <button
         onClick={prevSlide}
         className="absolute top-1/2 left-3 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full"
@@ -65,18 +64,16 @@ export default function Carousel() {
         ❯
       </button>
 
-      {/* Dots */}
       {/* Dots (minimal lines) */}
       <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-1">
         {images.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrent(index)}
-            className={`h-[1px] w-[20px] transition-all ${
-              index === current
-                ? "bg-white opacity-90"
-                : "bg-white/30 opacity-60"
-            }`}
+            className={`h-[1px] w-[20px] transition-all ${index === current
+              ? "bg-white opacity-90"
+              : "bg-white/30 opacity-60"
+              }`}
           />
         ))}
       </div>
