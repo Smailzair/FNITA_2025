@@ -65,15 +65,16 @@ export default function Carousel() {
       </button>
 
       {/* Dots (minimal lines) */}
-      <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-1">
+      <div className="absolute bottom-4 left-0 right-0 h-[9px] flex items-center justify-center space-x-1">
         {images.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrent(index)}
-            className={`h-[1px] w-[20px] transition-all ${index === current
-              ? "bg-white opacity-90"
-              : "bg-white/30 opacity-60"
-              }`}
+            className={`h-[3px] w-[20px] hover:h-[9px] hover:bg-amber-700 hover:w-[30px] transition-all ${
+              index === current
+                ? "bg-white opacity-90"
+                : "bg-white/30 opacity-60"
+            }`}
           />
         ))}
       </div>

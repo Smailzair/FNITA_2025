@@ -1,17 +1,11 @@
 import { useRef, useState } from "react";
-import { supabase } from "../supabaseClient";
+import { emailExists, supabase } from "../api/supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
 import { PgHeader } from "../components/PgHeader";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [errorr, setError] = useState<string | null>(null);
-
-
-
-  // const [EmailVal, setEmailVal] = useState("");
-  // const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const EmailInput = useRef<HTMLInputElement>(null);
   const PassInput = useRef<HTMLInputElement>(null);
@@ -24,48 +18,39 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) { setError(error.message); console.log(errorr) }
-    else navigate("/dashboard");
-  };
+    setLoading(true);
+    if (!EmailInput.current || EmailInput.current?.value === "") return;
 
-  // return (
-  //   <div style={{ maxWidth: 400, margin: "auto" }}>
-  //     <h2>Login</h2>
-  //     <form onSubmit={handleLogin}>
-  //       <input
-  //         type="email"
-  //         placeholder="Email"
-  //         onChange={(e) => setEmail(e.target.value)}
-  //         required
-  //       />
-  //       <input
-  //         type="password"
-  //         placeholder="Password"
-  //         onChange={(e) => setPassword(e.target.value)}
-  //         required
-  //       />
-  //       <button type="submit">Login</button>
-  //     </form>
-  //     {error && <p style={{ color: "red" }}>{error}</p>}
-  //   </div>
-  // );
+    //-------- Check if the email exists in the database
+    const emailAdressExists = await emailExists(EmailInput.current.value);
+    if (!emailAdressExists) {
+      if (NewUserLink.current) NewUserLink.current.hidden = false;
+      setLoading(false);
+      return;
+    }
+    //---------------------------------------------
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: EmailInput.current.value,
+      password: PassInput.current ? PassInput.current.value : "",
+    });
+    if (error) {
+      setError(error.message);
+      console.log(errorr);
+      if (ForgottenLink.current) ForgottenLink.current.hidden = false;
+    } else navigate("/dashboard");
+    setLoading(false);
+  };
 
   const HandleTxtChng = () => {
     EmailInput.current?.classList.remove("bg-red-400");
     PassInput.current?.classList.remove("bg-red-400");
     if (ForgottenLink.current) ForgottenLink.current.hidden = true;
     if (NewUserLink.current) NewUserLink.current.hidden = true;
-
-    setEmail(EmailInput.current ? EmailInput.current.value : "");
-    setPassword(PassInput.current ? PassInput.current.value : "");
   };
 
   return (
-    <>
+    <div className="flex flex-col w-screen h-screen">
       <PgHeader />
       <div className="flex justify-center items-center h-[calc(100vh-7.25rem)] w-full">
         <form
@@ -76,7 +61,7 @@ export default function Login() {
             <li>
               <span>Email : </span>
               <input
-                className="m-1 rounded-md text-black pl-1"
+                className="m-1 rounded-md text-black bg-gray-400 pl-1"
                 type="email"
                 placeholder="Email"
                 required={true}
@@ -89,7 +74,7 @@ export default function Login() {
               <span>Mot de passe : </span>
               <input
                 ref={PassInput}
-                className="m-1 rounded-md text-black pl-1"
+                className="m-1 rounded-md text-black bg-gray-400 pl-1"
                 type={ShowPass ? "text" : "password"}
                 placeholder="Mot de passe"
                 required={false}
@@ -108,7 +93,9 @@ export default function Login() {
                   SetshowPass(true);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${ShowPass ? 'hidden' : ''}`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${
+                  ShowPass ? "hidden" : ""
+                }`}
               >
                 <path
                   strokeLinecap="round"
@@ -135,7 +122,9 @@ export default function Login() {
                   SetshowPass(false);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${!ShowPass ? 'hidden' : ''}`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${
+                  !ShowPass ? "hidden" : ""
+                }`}
               >
                 <path
                   strokeLinecap="round"
@@ -146,7 +135,9 @@ export default function Login() {
             </li>
           </ul>
           <Link
-            to={`/Pages/NewUser/${email}`}
+            to={`/Pages/NewUser/${
+              EmailInput.current ? EmailInput.current.value : ""
+            }`}
             className="text-yellow-400 underline underline-offset-2"
             hidden={true}
             ref={NewUserLink}
@@ -156,24 +147,28 @@ export default function Login() {
           <div className="flex flex-row justify-end items-center w-full">
             <div className="flew flex-col">
               <Link
-                to={`/Pages/PassForget/${email}`}
+                to={`/Pages/PassForget/${
+                  EmailInput.current ? EmailInput.current.value : ""
+                }`}
                 className="text-red-700 font-semibold underline mr-10"
                 hidden={true}
                 ref={ForgottenLink}
               >
                 Oublié?
               </Link>
-              <h1 className="text-green-400 text-sm">  {/*hidden={!loading}> */}
+              <h6
+                className={`text-green-400 text-xs ${loading ? "" : "hidden"}`}
+              >
                 Vieullez Patienter ..
-              </h1>
+              </h6>
             </div>
 
-            <button className="bg-cyan-700 outline-white outline-none hover:outline-black hover:text-black rounded-full pr-2 pl-2 m-2 mr-10 w-28">
+            <button className="bg-cyan-700 text-md border-1 outline-white outline-none hover:outline-black hover:text-black rounded-full p-1.5 m-2 mr-10 w-28">
               Se Connecter
             </button>
           </div>
         </form>
       </div>
-    </>
+    </div>
   );
 }

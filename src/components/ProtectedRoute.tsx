@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../api/supabaseClient";
 import { Navigate } from "react-router-dom";
 
 interface ProtectedRouteProps {
