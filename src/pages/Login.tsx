@@ -24,7 +24,11 @@ export default function Login() {
     //-------- Check if the email exists in the database
     const emailAdressExists = await emailExists(EmailInput.current.value);
     if (!emailAdressExists) {
-      if (NewUserLink.current) NewUserLink.current.hidden = false;
+      if (NewUserLink.current) {
+        NewUserLink.current.hidden = false;
+        EmailInput.current.classList.add("bg-orange-400");
+        EmailInput.current.focus();
+      }
       setLoading(false);
       return;
     }
@@ -37,13 +41,20 @@ export default function Login() {
     if (error) {
       setError(error.message);
       console.log(errorr);
-      if (ForgottenLink.current) ForgottenLink.current.hidden = false;
+      if (ForgottenLink.current) {
+        ForgottenLink.current.hidden = false;
+        if (PassInput.current) {
+          PassInput.current.classList.add("bg-red-400");
+          PassInput.current.focus();
+          PassInput.current.select();
+        }
+      }
     } else navigate("/dashboard");
     setLoading(false);
   };
 
   const HandleTxtChng = () => {
-    EmailInput.current?.classList.remove("bg-red-400");
+    EmailInput.current?.classList.remove("bg-orange-400");
     PassInput.current?.classList.remove("bg-red-400");
     if (ForgottenLink.current) ForgottenLink.current.hidden = true;
     if (NewUserLink.current) NewUserLink.current.hidden = true;
@@ -77,7 +88,7 @@ export default function Login() {
                 className="m-1 rounded-md text-black bg-gray-400 pl-1"
                 type={ShowPass ? "text" : "password"}
                 placeholder="Mot de passe"
-                required={false}
+                required={true}
                 onChange={HandleTxtChng}
               ></input>
               <svg
@@ -93,9 +104,8 @@ export default function Login() {
                   SetshowPass(true);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${
-                  ShowPass ? "hidden" : ""
-                }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${ShowPass ? "hidden" : ""
+                  }`}
               >
                 <path
                   strokeLinecap="round"
@@ -122,9 +132,8 @@ export default function Login() {
                   SetshowPass(false);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${
-                  !ShowPass ? "hidden" : ""
-                }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${!ShowPass ? "hidden" : ""
+                  }`}
               >
                 <path
                   strokeLinecap="round"
@@ -134,27 +143,26 @@ export default function Login() {
               </svg>
             </li>
           </ul>
-          <Link
-            to={`/Pages/NewUser/${
-              EmailInput.current ? EmailInput.current.value : ""
-            }`}
-            className="text-yellow-400 underline underline-offset-2"
-            hidden={true}
-            ref={NewUserLink}
-          >
-            Compte non existe, créer un compte?
-          </Link>
+
           <div className="flex flex-row justify-end items-center w-full">
             <div className="flew flex-col">
               <Link
-                to={`/Pages/PassForget/${
-                  EmailInput.current ? EmailInput.current.value : ""
-                }`}
-                className="text-red-700 font-semibold underline mr-10"
+                to={`/Pages/NewUser/${EmailInput.current ? EmailInput.current.value : ""
+                  }`}
+                className="text-yellow-400 text-center text-xs flex font-semibold underline mr-10"
+                hidden={true}
+                ref={NewUserLink}
+              >
+                Email non enregistré<br />créer un compte?
+              </Link>
+              <Link
+                to={`/Pages/PassForget/${EmailInput.current ? EmailInput.current.value : ""
+                  }`}
+                className="text-red-400 text-center text-xs flex font-semibold underline mr-10"
                 hidden={true}
                 ref={ForgottenLink}
               >
-                Oublié?
+                Mot de passe<br />oublié?
               </Link>
               <h6
                 className={`text-green-400 text-xs ${loading ? "" : "hidden"}`}
