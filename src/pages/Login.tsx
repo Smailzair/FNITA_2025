@@ -18,9 +18,8 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     if (!EmailInput.current || EmailInput.current?.value === "") return;
-
+    setLoading(true);
     //-------- Check if the email exists in the database
     const emailAdressExists = await emailExists(EmailInput.current.value);
     if (!emailAdressExists) {
