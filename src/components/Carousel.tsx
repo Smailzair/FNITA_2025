@@ -70,7 +70,7 @@ export default function Carousel() {
           <button
             key={index}
             onClick={() => setCurrent(index)}
-            className={`h-[3px] w-[20px] hover:h-[9px] hover:bg-amber-700 hover:w-[30px] transition-all ${
+            className={`h-[3px] w-[20px] hover:h-[9px] hover:bg-amber-700 hover:w-[30px] transition-all cursor-pointer ${
               index === current
                 ? "bg-white opacity-90"
                 : "bg-white/30 opacity-60"

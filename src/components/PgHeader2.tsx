@@ -1,17 +1,8 @@
-// "use client";
-// import Link from "next/link";
-// import React, { useState } from "react";
-// import { MainDroll } from "./MainDroll";
-// import Cookies from "js-cookie";
-// import { redirect } from "next/navigation";
-// import Image from "next/image";
-
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getUserByEmail, supabase } from "../api/supabaseClient";
 
 export const PgHeader2 = () => {
-  // const [email, setEmail] = useState<string | null>(null);
   const [user_full_name, setUserFullName] = useState<string | null>(null);
   const [user_type, setUserType] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -32,7 +23,7 @@ export const PgHeader2 = () => {
       }
     };
     getSession();
-  }, [navigate]);
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
