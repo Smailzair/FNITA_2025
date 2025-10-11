@@ -11,7 +11,7 @@ export const MainDroll = () => {
       >
         <div className="py-1" role="none">
           <Link
-            to={"/Pages/Login"}
+            to={"/Login"}
             className="flex flex-shrink items-center hover:bg-gray-700"
           >
             <svg
@@ -39,7 +39,7 @@ export const MainDroll = () => {
             </a>
           </Link>
           <Link
-            to={"/Pages/NewUser"}
+            to={"/Register"}
             className="flex flex-shrink items-center hover:bg-gray-700 "
           >
             <svg

@@ -9,7 +9,7 @@ export const PgHeader = () => {
       <div className="mx-auto max-sm:ml-0 max-md:ml-2 ml-8 ">
         <div className="relative flex h-20 items-center justify-between">
           <div className="flex flex-grow items-center justify-center sm:justify-star">
-            <div className="items-center min-w-fit">
+            <div className="items-center min-w-fit ml-1">
               <Link to={".."}>
                 <img
                   src="/LOGO_ALG.png"
@@ -31,7 +31,7 @@ export const PgHeader = () => {
             </div>
 
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 max-sm:hidden min-w-fit">
-              <Link to={"/Pages/NewUser"}>
+              <Link to={"/Register"}>
                 <button
                   type="button"
                   className="relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white hover:outline-3 hover:outline-gray-800"
@@ -53,7 +53,7 @@ export const PgHeader = () => {
                   </svg>
                 </button>
               </Link>
-              <Link to={"/Pages/Login"}>
+              <Link to={"/Login"}>
                 <button
                   type="button"
                   className="ml-1 relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white hover:outline-3 hover:outline-gray-800"

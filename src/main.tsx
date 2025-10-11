@@ -6,12 +6,14 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Register from "./pages/Register";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route
           path="/dashboard"
           element={

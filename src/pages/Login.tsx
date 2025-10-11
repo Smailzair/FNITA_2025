@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { emailExists, supabase } from "../api/supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
 import { PgHeader } from "../components/PgHeader";
+import PgFooter from "../components/PgFooter";
 
 export default function Login() {
   const [errorr, setError] = useState<string | null>(null);
@@ -103,8 +104,9 @@ export default function Login() {
                   SetshowPass(true);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${ShowPass ? "hidden" : ""
-                  }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${
+                  ShowPass ? "hidden" : ""
+                }`}
               >
                 <path
                   strokeLinecap="round"
@@ -131,8 +133,9 @@ export default function Login() {
                   SetshowPass(false);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${!ShowPass ? "hidden" : ""
-                  }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${
+                  !ShowPass ? "hidden" : ""
+                }`}
               >
                 <path
                   strokeLinecap="round"
@@ -146,22 +149,28 @@ export default function Login() {
           <div className="flex flex-row justify-end items-center w-full">
             <div className="flew flex-col">
               <Link
-                to={`/Pages/NewUser/${EmailInput.current ? EmailInput.current.value : ""
-                  }`}
+                to={`/Pages/NewUser/${
+                  EmailInput.current ? EmailInput.current.value : ""
+                }`}
                 className="text-yellow-400 text-center text-xs flex font-semibold underline mr-10"
                 hidden={true}
                 ref={NewUserLink}
               >
-                Email non enregistré<br />créer un compte?
+                Email non enregistré
+                <br />
+                créer un compte?
               </Link>
               <Link
-                to={`/Pages/PassForget/${EmailInput.current ? EmailInput.current.value : ""
-                  }`}
+                to={`/Pages/PassForget/${
+                  EmailInput.current ? EmailInput.current.value : ""
+                }`}
                 className="text-red-400 text-center text-xs flex font-semibold underline mr-10"
                 hidden={true}
                 ref={ForgottenLink}
               >
-                Mot de passe<br />oublié?
+                Mot de passe
+                <br />
+                oublié?
               </Link>
               <h6
                 className={`text-green-400 text-xs ${loading ? "" : "hidden"}`}
@@ -176,6 +185,7 @@ export default function Login() {
           </div>
         </form>
       </div>
+      <PgFooter />
     </div>
   );
 }
