@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import PgFooter from "../components/PgFooter";
 import { PgHeader } from "../components/PgHeader";
 import SearchDropdown from "../components/SearchDropdown";
@@ -88,10 +88,18 @@ export default function Register() {
     "Tlemcen",
     "Touggourt",
   ];
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const email = queryParams.get("email");
+    if (email) {
+      EmailInput.current!.value = email;
+    }
+  }, []);
   function HandleSubmit(event: FormEvent<HTMLFormElement>): void {
-    console.log("ok");
-    setLoading(true);
     event.preventDefault();
+    setLoading(true);
+    // ------------------- Just for debugging tmp -------------------
     console.log(
       FamnmeInput_val,
       NmeInput_val,
@@ -108,6 +116,7 @@ export default function Register() {
       SelectedWilaya,
       SelectedRadio
     );
+    //---------------------------------------------------------
     setLoading(false);
   }
 
@@ -123,40 +132,53 @@ export default function Register() {
           className="bg-stone-500 flex flex-row flex-wrap items-center justify-center p-2 rounded-lg min-w-80 max-w-2xl"
           onSubmit={HandleSubmit}
         >
-          <h1 className="text-slate-300 text-center items-center w-fit text-2xl font-bold mb-4">
-            Nouveau utilisateur
+          <h1 className="text-slate-300 text-center items-center w-fit text-2xl mb-4">
+            -- Nouveau utilisateur --
           </h1>
           <div className="row flex w-full justify-center items-center space-x-3">
-            <label>
-              <input
-                type="radio"
-                value="Vétérinaire"
-                checked={SelectedRadio === "Vétérinaire"}
-                onChange={() => setSelectedRadio("Vétérinaire")}
-                className="mr-1"
-              ></input>
-              Vétérinaire
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="Ayant-Droit"
-                checked={SelectedRadio === "Ayant-Droit"}
-                onChange={() => setSelectedRadio("Ayant-Droit")}
-                className="mr-1"
-              ></input>
-              Ayant-Droit
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="Propriétaire"
-                checked={SelectedRadio === "Propriétaire"}
-                onChange={() => setSelectedRadio("Propriétaire")}
-                className="mr-1"
-              ></input>
-              Propriétaire
-            </label>
+
+            <div className="flex flex-col items-center" onClick={() => setSelectedRadio("Vétérinaire")}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 0 19 19" width="27" height="27" fill="currentColor"><path d="M16.417 9.579A7.917 7.917 0 1 1 8.5 1.662a7.917 7.917 0 0 1 7.917 7.917zm-3.193-.767a1.588 1.588 0 1 0-1.999 1.534v1.515a2.014 2.014 0 0 1-4.027 0v-.334a2.676 2.676 0 0 0 2.262-2.64v-2.14a1.244 1.244 0 0 0-.506-1.002.894.894 0 1 0-.395.754.424.424 0 0 1 .08.248v2.14a1.851 1.851 0 1 1-3.703 0v-2.14a.422.422 0 0 1 .1-.273.895.895 0 1 0-.356-.77 1.245 1.245 0 0 0-.565 1.043v2.14a2.676 2.676 0 0 0 2.262 2.64v.334a2.835 2.835 0 1 0 5.67 0v-1.515a1.59 1.59 0 0 0 1.177-1.534zm-.821 0a.767.767 0 1 1-.767-.767.768.768 0 0 1 .767.767z"></path></svg>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="Vétérinaire"
+                  checked={SelectedRadio === "Vétérinaire"}
+                  readOnly={true}
+                  className="mr-1"
+                ></input>
+                Vétérinaire
+              </label>
+            </div>
+            <div className="text-gray-400"> | </div>
+            <div className="flex flex-col items-center" onClick={() => setSelectedRadio("Ayant-Droit")}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M2.91312 11.6739C3.23584 10.1953 3.53865 8.80805 2 6.5L5.5 2.5C5.5 2.5 9 4 12 1.5C15 4 18.5 2.5 18.5 2.5L22 6.5C20.4612 8.8081 20.7641 10.1954 21.0868 11.674C21.3933 13.0781 21.7177 14.5645 20.5 17C19.3425 19.315 17.3478 20.1227 15.4849 20.877C14.1289 21.4261 12.8428 21.9469 12.0003 23C11.1577 21.9469 9.8715 21.4261 8.51549 20.8771C6.65245 20.1227 4.65758 19.315 3.50001 17C2.28218 14.5645 2.60663 13.078 2.91312 11.6739ZM14.3776 12.7725L16.7552 10.4549L13.4694 9.97746L11.9999 7L10.5304 9.97746L7.24463 10.4549L9.62227 12.7725L9.06098 16.0451L11.9999 14.5L14.9388 16.0451L14.3776 12.7725Z"></path></svg>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="Ayant-Droit"
+                  checked={SelectedRadio === "Ayant-Droit"}
+                  readOnly={true}
+                  className="mr-1"
+                ></input>
+                Ayant-Droit
+              </label>
+            </div>
+            <div className="text-gray-400"> | </div>
+            <div className="flex flex-col items-center" onClick={() => setSelectedRadio("Propriétaire")}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M2 19V8H1V6H4V4C4 3.44772 4.44772 3 5 3H19C19.5523 3 20 3.44772 20 4V6H23V8H22V19H23V21H1V19H2ZM13 19V12H11V19H13ZM8 19V12H6V19H8ZM18 19V12H16V19H18ZM6 5V6H18V5H6Z"></path></svg>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="Ayant-Droit"
+                  checked={SelectedRadio === "Propriétaire"}
+                  readOnly={true}
+                  className="mr-1"
+                ></input>
+                Administrateur
+              </label>
+            </div>
+
           </div>
           <div className="border-t-0 border-2 border-gray-400 w-full m-2"></div>
 
@@ -165,7 +187,7 @@ export default function Register() {
             <label className="flex w-72 items-center justify-end">
               Nom :
               <input
-                className="m-1 rounded-md text-black pl-1 w-30 bg-orange-200"
+                className="m-1 rounded-md text-black pl-1 w-45 bg-orange-200"
                 type="text"
                 placeholder="Nom"
                 // ref={FamnmeInput}
@@ -176,7 +198,7 @@ export default function Register() {
             <label className="flex w-72 items-center justify-end">
               Prénom :
               <input
-                className="m-1 rounded-md text-black pl-1 w-30 bg-orange-200"
+                className="m-1 rounded-md text-black pl-1 w-45 bg-orange-200"
                 type="text"
                 placeholder="Prénom"
                 required={true}
@@ -187,8 +209,9 @@ export default function Register() {
             <label className="flex w-72 items-center justify-end">
               N° Tél :
               <input
-                className="m-1 rounded-md text-black pl-1 w-30"
-                type="text"
+                className="m-1 rounded-md text-black pl-1 w-45"
+                id="phone"
+                type="tel"
                 placeholder="N° Tél"
                 //ref={TelNum}
                 onChange={(ee) => setTelNumVal(ee.currentTarget.value)}
@@ -197,6 +220,7 @@ export default function Register() {
             <label className="flex w-72 items-center justify-end">
               Wilaya :
               <SearchDropdown
+                className="m-1 rounded-md text-black pl-1 w-45"
                 options={options}
                 placeholder={"Wilaya"}
                 handleChangetoparent={(SelectedWilaya) => {
@@ -207,7 +231,7 @@ export default function Register() {
             <label className="flex w-72 items-center justify-end">
               Cité :
               <input
-                className="m-1 rounded-md text-black pl-1 w-30"
+                className="m-1 rounded-md text-black pl-1 w-45"
                 type="text"
                 placeholder="Cité"
                 //ref={Cityy}
@@ -217,7 +241,7 @@ export default function Register() {
             <label className="flex w-72 items-center justify-end">
               Adresse :
               <input
-                className="m-1 rounded-md text-black pl-1 w-30"
+                className="m-1 rounded-md text-black pl-1 w-45"
                 type="text"
                 placeholder="Adresse"
                 //ref={Addr}
@@ -227,7 +251,7 @@ export default function Register() {
             <label className="flex w-72 items-center justify-end">
               N° CNI :
               <input
-                className="m-1 rounded-md text-black pl-1 w-30"
+                className="m-1 rounded-md text-black pl-1 w-45"
                 type="text"
                 placeholder="N° Carte Nationale d'Identité"
                 //ref={CNI}
@@ -242,7 +266,7 @@ export default function Register() {
             >
               ANV :
               <input
-                className="m-1 rounded-md text-black pl-1 w-30 bg-orange-200"
+                className="m-1 rounded-md text-black pl-1 w-45 bg-orange-200"
                 type="text"
                 placeholder="Code Autorité Vétérinaire Nationale"
                 //ref={ANV}
@@ -258,7 +282,7 @@ export default function Register() {
               <label className="flex w-72 items-center justify-end">
                 Email :
                 <input
-                  className="m-1 rounded-md text-black pl-1 w-30 bg-orange-200"
+                  className="m-1 rounded-md text-black pl-1 w-45 bg-orange-200"
                   type="email"
                   placeholder="Email"
                   required={true}
@@ -281,7 +305,7 @@ export default function Register() {
               <label className="flex w-72 items-center justify-end">
                 Mot de passe :
                 <input
-                  className="m-1 rounded-md text-black pl-1 w-30 bg-orange-200"
+                  className="m-1 rounded-md text-black pl-1 w-45 bg-orange-200"
                   type={ShowPass ? "password" : "text"}
                   placeholder="Mot de passe"
                   required={true}
@@ -302,7 +326,7 @@ export default function Register() {
                     PassInput.current?.focus();
                   }}
                   style={{ display: ShowPass ? "block" : "none" }}
-                  className="mt-1 mr-1 absolute text-gray-700"
+                  className="mr-1 absolute text-gray-600"
                 >
                   <path
                     strokeLinecap="round"
@@ -329,7 +353,7 @@ export default function Register() {
                     PassInput.current?.focus();
                   }}
                   style={{ display: ShowPass ? "none" : "block" }}
-                  className="mt-1 mr-1 absolute text-gray-700"
+                  className="mr-1 absolute text-gray-600"
                 >
                   <path
                     strokeLinecap="round"
@@ -342,7 +366,7 @@ export default function Register() {
               <label className="flex w-72 items-center justify-end">
                 Confirmer :
                 <input
-                  className="m-1 rounded-md text-black pl-1 w-30 bg-orange-200"
+                  className="m-1 rounded-md text-black pl-1 w-45 bg-orange-200"
                   type={ShowPass2 ? "password" : "text"}
                   placeholder="Confirmer"
                   required={true}
@@ -363,7 +387,7 @@ export default function Register() {
                     PassInput2.current?.focus();
                   }}
                   style={{ display: ShowPass2 ? "block" : "none" }}
-                  className="mt-1 mr-1 absolute text-gray-700"
+                  className="mr-1 absolute text-gray-600"
                 >
                   <path
                     strokeLinecap="round"
@@ -390,7 +414,7 @@ export default function Register() {
                     PassInput2.current?.focus();
                   }}
                   style={{ display: ShowPass2 ? "none" : "block" }}
-                  className="mt-1 mr-1 absolute text-gray-700"
+                  className="mr-1 absolute text-gray-600"
                 >
                   <path
                     strokeLinecap="round"
@@ -417,7 +441,7 @@ export default function Register() {
           <div className="row w-full flex justify-center ">
             <button
               type="submit"
-              className="bg-green-800 text-white outline-white outline-none hover:outline-black hover:text-black rounded-full pr-2 pl-2 m-2 mr-10 w-28"
+              className="bg-green-700 text-md border-1 outline-white outline-none hover:outline-black hover:text-black rounded-full p-1.5 m-2 mr-10 w-28"
             >
               Enregistrer
             </button>
