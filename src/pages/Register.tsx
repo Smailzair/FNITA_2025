@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import PgFooter from "../components/PgFooter";
 import { PgHeader } from "../components/PgHeader";
-import SearchDropdown from "../components/SearchDropdown";
+import WilayaComboBox from "../components/WilayaComboBox";
 
 export default function Register() {
   const [loading, setLoading] = useState(false);
@@ -28,66 +28,66 @@ export default function Register() {
 
   const CptExist = useRef<HTMLLabelElement | null>(null);
 
-  const options = [
-    "Adrar",
-    "Aïn Defla",
-    "Aïn Témouchent",
-    "Alger",
-    "Annaba",
-    "Batna",
-    "Béchar",
-    "Béjaïa",
-    "Béni Abbès",
-    "Biskra",
-    "Blida",
-    "Bordj Badji Mokhtar",
-    "Bordj Bou Arreridj",
-    "Bouira",
-    "Boumerdès",
-    "Chlef",
-    "Constantine",
-    "Djanet",
-    "Djelfa",
-    "El Bayadh",
-    "El Meniaa",
-    "El M'Ghair",
-    "El Oued",
-    "El Tarf",
-    "Ghardaïa",
-    "Guelma",
-    "Illizi",
-    "In Guezzam",
-    "In Salah",
-    "Jijel",
-    "Khenchela",
-    "Laghouat",
-    "Mascara",
-    "Médéa",
-    "Mila",
-    "Mostaganem",
-    "M'Sila",
-    "Naâma",
-    "Oran",
-    "Ouargla",
-    "Ouled Djellal",
-    "Oum El Bouaghi",
-    "Relizane",
-    "Saïda",
-    "Sétif",
-    "Sidi Bel Abbès",
-    "Skikda",
-    "Souk Ahras",
-    "Tamanrasset",
-    "Tébessa",
-    "Tiaret",
-    "Timimoun",
-    "Tindouf",
-    "Tipaza",
-    "Tissemsilt",
-    "Tizi Ouzou",
-    "Tlemcen",
-    "Touggourt",
-  ];
+  // const options = [
+  //   "Adrar",
+  //   "Aïn Defla",
+  //   "Aïn Témouchent",
+  //   "Alger",
+  //   "Annaba",
+  //   "Batna",
+  //   "Béchar",
+  //   "Béjaïa",
+  //   "Béni Abbès",
+  //   "Biskra",
+  //   "Blida",
+  //   "Bordj Badji Mokhtar",
+  //   "Bordj Bou Arreridj",
+  //   "Bouira",
+  //   "Boumerdès",
+  //   "Chlef",
+  //   "Constantine",
+  //   "Djanet",
+  //   "Djelfa",
+  //   "El Bayadh",
+  //   "El Meniaa",
+  //   "El M'Ghair",
+  //   "El Oued",
+  //   "El Tarf",
+  //   "Ghardaïa",
+  //   "Guelma",
+  //   "Illizi",
+  //   "In Guezzam",
+  //   "In Salah",
+  //   "Jijel",
+  //   "Khenchela",
+  //   "Laghouat",
+  //   "Mascara",
+  //   "Médéa",
+  //   "Mila",
+  //   "Mostaganem",
+  //   "M'Sila",
+  //   "Naâma",
+  //   "Oran",
+  //   "Ouargla",
+  //   "Ouled Djellal",
+  //   "Oum El Bouaghi",
+  //   "Relizane",
+  //   "Saïda",
+  //   "Sétif",
+  //   "Sidi Bel Abbès",
+  //   "Skikda",
+  //   "Souk Ahras",
+  //   "Tamanrasset",
+  //   "Tébessa",
+  //   "Tiaret",
+  //   "Timimoun",
+  //   "Tindouf",
+  //   "Tipaza",
+  //   "Tissemsilt",
+  //   "Tizi Ouzou",
+  //   "Tlemcen",
+  //   "Touggourt",
+  // ];
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
@@ -219,14 +219,15 @@ export default function Register() {
             </label>
             <label className="flex w-72 items-center justify-end">
               Wilaya :
-              <SearchDropdown
+              {/* <SearchDropdown
                 className="m-1 rounded-md text-black pl-1 w-45"
                 options={options}
                 placeholder={"Wilaya"}
                 handleChangetoparent={(SelectedWilaya) => {
                   setSelectedWilaya(SelectedWilaya);
                 }}
-              />
+              /> */}
+              <WilayaComboBox value={SelectedWilaya ?? ""} onChange={setSelectedWilaya} />
             </label>
             <label className="flex w-72 items-center justify-end">
               Cité :
