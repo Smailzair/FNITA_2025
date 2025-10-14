@@ -37,17 +37,20 @@ export default function Register() {
     }
   }, []);
 
-
   useEffect(() => {
     function handleResize() {
-      setIsSmallScreen((window.innerHeight <= 455 && window.innerWidth > 490) || (window.innerHeight <= 600 && window.innerWidth <= 500) || (window.innerHeight <= 600 && window.innerWidth <= 338));
+      setIsSmallScreen(
+        (window.innerHeight <= 455 && window.innerWidth > 490) ||
+          (window.innerHeight <= 600 && window.innerWidth <= 500) ||
+          (window.innerHeight <= 600 && window.innerWidth <= 338)
+      );
     }
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
     handleResize();
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
   function HandleSubmit(event: FormEvent<HTMLFormElement>): void {
@@ -96,6 +99,7 @@ export default function Register() {
             <div
               className="flex flex-col items-center"
               onClick={() => setSelectedRadio("Vétérinaire")}
+              title="Médecin Vétérinaire"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -121,6 +125,7 @@ export default function Register() {
             <div
               className="flex flex-col items-center"
               onClick={() => setSelectedRadio("Ayant-Droit")}
+              title="Personne autorisée par le ministre et les administrateurs (Police, Gendarmerie etc...)"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -146,15 +151,27 @@ export default function Register() {
             <div
               className="flex flex-col items-center"
               onClick={() => setSelectedRadio("Propriétaire")}
+              title="Ministre et administrateur du site"
             >
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                width="24"
-                height="24"
                 fill="currentColor"
+                width="28"
+                height="28"
+                viewBox="-1 0 19 19"
+                xmlns="http://www.w3.org/2000/svg"
+                className="cf-icon-svg"
               >
-                <path d="M2 19V8H1V6H4V4C4 3.44772 4.44772 3 5 3H19C19.5523 3 20 3.44772 20 4V6H23V8H22V19H23V21H1V19H2ZM13 19V12H11V19H13ZM8 19V12H6V19H8ZM18 19V12H16V19H18ZM6 5V6H18V5H6Z"></path>
+                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                <g
+                  id="SVGRepo_tracerCarrier"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke="#CCCCCC"
+                  stroke-width="0.266"
+                ></g>
+                <g id="SVGRepo_iconCarrier">
+                  <path d="M16.417 9.579A7.917 7.917 0 1 1 8.5 1.662a7.917 7.917 0 0 1 7.917 7.917zm-2.853 3.368a.318.318 0 0 0-.316-.316h-.334v-.394a.318.318 0 0 0-.316-.317H12.3V9.25h.214a.396.396 0 0 0 0-.79H4.457a.396.396 0 0 0 0 .79h.226v2.67H4.35a.318.318 0 0 0-.317.317v.394H3.7a.318.318 0 0 0-.317.316v.394h10.182zm-8.88-5.144H12.3a3.808 3.808 0 0 0-7.617 0zM6.35 9.67v2.25h-.79V9.67a.396.396 0 0 1 .791 0zm1.686.006v2.244h-.791V9.676a.396.396 0 0 1 .791 0zm1.686.007v2.237h-.791V9.683a.396.396 0 0 1 .791 0zm1.686.006v2.231h-.792V9.69a.396.396 0 0 1 .792 0z"></path>
+                </g>
               </svg>
               <label className="flex items-center">
                 <input
@@ -172,7 +189,10 @@ export default function Register() {
 
           {/* --------------------------Proprietaire -------------------------- */}
           <div className="flex flex-wrap justify-center items-start">
-            <label className="flex text-orange-200 w-72 items-center justify-end" title="Nom du famille">
+            <label
+              className="flex text-orange-200 w-72 items-center justify-end"
+              title="Nom du famille"
+            >
               Nom :
               <input
                 className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
@@ -181,9 +201,11 @@ export default function Register() {
                 required={true}
                 onChange={(ee) => setFamnmeInputVal(ee.currentTarget.value)}
               />
-
             </label>
-            <label className="flex text-orange-200 w-72 items-center justify-end" title="Prénom">
+            <label
+              className="flex text-orange-200 w-72 items-center justify-end"
+              title="Prénom"
+            >
               Prénom :
               <input
                 className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
@@ -193,7 +215,10 @@ export default function Register() {
                 onChange={(ee) => setNmeInputVal(ee.currentTarget.value)}
               />
             </label>
-            <label className="flex text-orange-200 w-72 items-center justify-end" title="Numéro de téléphone">
+            <label
+              className="flex text-orange-200 w-72 items-center justify-end"
+              title="Numéro de téléphone"
+            >
               N° Tél :
               <input
                 className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
@@ -204,7 +229,10 @@ export default function Register() {
                 onChange={(ee) => setTelNumVal(ee.currentTarget.value)}
               />
             </label>
-            <label className="flex w-72 items-center justify-end" title="Numéro de la carte nationale d'identité">
+            <label
+              className="flex w-72 items-center justify-end"
+              title="Numéro de la carte nationale d'identité"
+            >
               N° CNI :
               <input
                 className="m-1 rounded-md text-black pl-1 w-45"
@@ -215,9 +243,8 @@ export default function Register() {
             </label>
             {SelectedRadio === "Vétérinaire" && (
               <label
-                className={
-                  "flex text-orange-200 w-72 items-center justify-end"
-                } title="Code de l'Autorité Vétérinaire Nationale"
+                className={"flex text-orange-200 w-72 items-center justify-end"}
+                title="Code de l'Autorité Vétérinaire Nationale"
               >
                 ANV :
                 <input
@@ -257,7 +284,10 @@ export default function Register() {
           {/* -------------------------------------------------------- */}
           <div className="border-t-2 border-gray-400 w-full m-2"></div>
           <div className="flex flex-wrap justify-center">
-            <div className="flex flex-col items-center justify-center" title="Important : vous en aurez besoin pour confirmer votre inscription.">
+            <div
+              className="flex flex-col items-center justify-center"
+              title="Important : vous en aurez besoin pour confirmer votre inscription."
+            >
               <label className="flex text-orange-200 w-72 items-center justify-end">
                 Email :
                 <input
@@ -281,7 +311,10 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="flex text-orange-200 w-72 items-center justify-end" title="Mot de passe d'accès au compte">
+              <label
+                className="flex text-orange-200 w-72 items-center justify-end"
+                title="Mot de passe d'accès au compte"
+              >
                 Mot de passe :
                 <input
                   className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
@@ -341,7 +374,10 @@ export default function Register() {
                 </svg>
               </label>
 
-              <label className="flex text-orange-200 w-72 items-center justify-end" title="Veuillez retapper le mot de passe pour le confirmer">
+              <label
+                className="flex text-orange-200 w-72 items-center justify-end"
+                title="Veuillez retapper le mot de passe pour le confirmer"
+              >
                 Confirmer :
                 <input
                   className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
@@ -349,7 +385,6 @@ export default function Register() {
                   placeholder="Confirmer"
                   onChange={(ee) => setPassInput2Val(ee.currentTarget.value)}
                   required={true}
-
                 />
                 <svg
                   fill="none"
