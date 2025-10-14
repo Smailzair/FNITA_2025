@@ -27,6 +27,7 @@ export default function Register() {
   const [SelectedWilaya, setSelectedWilaya] = useState<string | null>(null);
 
   const CptExist = useRef<HTMLLabelElement | null>(null);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
@@ -34,6 +35,20 @@ export default function Register() {
     if (email) {
       EmailInput.current!.value = email;
     }
+  }, []);
+
+
+  useEffect(() => {
+    function handleResize() {
+      setIsSmallScreen((window.innerHeight <= 455 && window.innerWidth > 490) || (window.innerHeight <= 600 && window.innerWidth <= 500) || (window.innerHeight <= 600 && window.innerWidth <= 338));
+    }
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
   function HandleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -71,9 +86,12 @@ export default function Register() {
           className="bg-stone-500 flex flex-row flex-wrap items-center justify-center p-2 rounded-lg min-w-80 max-w-2xl"
           onSubmit={HandleSubmit}
         >
-          <h1 className="max-sm:hidden text-2xl text-slate-300 text-center items-center w-fit mb-4">
-            -- Nouveau utilisateur --
-          </h1>
+          {!isSmallScreen && (
+            <h1 className="text-2xl text-slate-300 text-center items-center w-fit mb-4">
+              -- Nouveau utilisateur --
+            </h1>
+          )}
+
           <div className="row flex w-full justify-center items-center space-x-3">
             <div
               className="flex flex-col items-center"
@@ -94,8 +112,8 @@ export default function Register() {
                   value="Vétérinaire"
                   checked={SelectedRadio === "Vétérinaire"}
                   readOnly={true}
-                  className="mr-1"
-                ></input>
+                  className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                />
                 Vétérinaire
               </label>
             </div>
@@ -119,8 +137,8 @@ export default function Register() {
                   value="Ayant-Droit"
                   checked={SelectedRadio === "Ayant-Droit"}
                   readOnly={true}
-                  className="mr-1"
-                ></input>
+                  className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                />
                 Ayant-Droit
               </label>
             </div>
@@ -144,8 +162,8 @@ export default function Register() {
                   value="Ayant-Droit"
                   checked={SelectedRadio === "Propriétaire"}
                   readOnly={true}
-                  className="mr-1"
-                ></input>
+                  className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                />
                 Administrateur
               </label>
             </div>
@@ -153,30 +171,29 @@ export default function Register() {
           <div className="border-t-0 border-2 border-gray-400 w-full m-2"></div>
 
           {/* --------------------------Proprietaire -------------------------- */}
-          <div className="flex flex-wrap justify-center">
-            <label className="flex text-orange-200 w-72 items-center justify-end">
+          <div className="flex flex-wrap justify-center items-start">
+            <label className="flex text-orange-200 w-72 items-center justify-end" title="Nom du famille">
               Nom :
               <input
                 className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
                 type="text"
                 placeholder="Nom"
-                // ref={FamnmeInput}
                 required={true}
                 onChange={(ee) => setFamnmeInputVal(ee.currentTarget.value)}
-              ></input>
+              />
+
             </label>
-            <label className="flex text-orange-200 w-72 items-center justify-end">
+            <label className="flex text-orange-200 w-72 items-center justify-end" title="Prénom">
               Prénom :
               <input
-                className="m-1 rounded-md text-black pl-1 w-45  !border-orange-200"
+                className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
                 type="text"
                 placeholder="Prénom"
                 required={true}
-                //ref={NmeInput}
                 onChange={(ee) => setNmeInputVal(ee.currentTarget.value)}
-              ></input>
+              />
             </label>
-            <label className="flex text-orange-200 w-72 items-center justify-end">
+            <label className="flex text-orange-200 w-72 items-center justify-end" title="Numéro de téléphone">
               N° Tél :
               <input
                 className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
@@ -185,9 +202,34 @@ export default function Register() {
                 type="tel"
                 placeholder="N° Tél"
                 onChange={(ee) => setTelNumVal(ee.currentTarget.value)}
-              ></input>
+              />
             </label>
-            <label className="flex w-72 items-center justify-end">
+            <label className="flex w-72 items-center justify-end" title="Numéro de la carte nationale d'identité">
+              N° CNI :
+              <input
+                className="m-1 rounded-md text-black pl-1 w-45"
+                type="text"
+                placeholder="N° Carte Nationale d'Identité"
+                onChange={(ee) => setCNIVal(ee.currentTarget.value)}
+              />
+            </label>
+            {SelectedRadio === "Vétérinaire" && (
+              <label
+                className={
+                  "flex text-orange-200 w-72 items-center justify-end"
+                } title="Code de l'Autorité Vétérinaire Nationale"
+              >
+                ANV :
+                <input
+                  className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
+                  type="text"
+                  placeholder="Code Autorité Vétérinaire Nationale"
+                  onChange={(ee) => setANVVal(ee.currentTarget.value)}
+                  required={SelectedRadio === "Vétérinaire"}
+                />
+              </label>
+            )}
+            <label className="flex w-72 items-center justify-end cl">
               Wilaya :
               <WilayaComboBox
                 value={SelectedWilaya ?? ""}
@@ -200,51 +242,22 @@ export default function Register() {
                 className="m-1 rounded-md text-black pl-1 w-45"
                 type="text"
                 placeholder="Cité"
-                //ref={Cityy}
                 onChange={(ee) => setCityyVal(ee.currentTarget.value)}
-              ></input>
+              />
             </label>
-            <label className="flex w-72 items-center justify-end">
-              Adresse :
-              <input
-                className="m-1 rounded-md text-black pl-1 w-45"
-                type="text"
+            <label className="flex w-72 items-start justify-end">
+              <span className="mt-1">Adresse :</span>
+              <textarea
+                className="m-1 rounded-md text-black pl-1 w-45 h-15"
                 placeholder="Adresse"
-                //ref={Addr}
                 onChange={(ee) => setAddrVal(ee.currentTarget.value)}
-              ></input>
-            </label>
-            <label className="flex w-72 items-center justify-end">
-              N° CNI :
-              <input
-                className="m-1 rounded-md text-black pl-1 w-45"
-                type="text"
-                placeholder="N° Carte Nationale d'Identité"
-                //ref={CNI}
-                onChange={(ee) => setCNIVal(ee.currentTarget.value)}
-              ></input>
-            </label>
-            <label
-              className={
-                "flex w-72 items-center justify-end " +
-                (SelectedRadio === "Vétérinaire" ? "visible" : "invisible")
-              }
-            >
-              ANV :
-              <input
-                className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
-                type="text"
-                placeholder="Code Autorité Vétérinaire Nationale"
-                //ref={ANV}
-                onChange={(ee) => setANVVal(ee.currentTarget.value)}
-                required={SelectedRadio === "Vétérinaire"}
-              ></input>
+              />
             </label>
           </div>
           {/* -------------------------------------------------------- */}
           <div className="border-t-2 border-gray-400 w-full m-2"></div>
           <div className="flex flex-wrap justify-center">
-            <div className="flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center" title="Important : vous en aurez besoin pour confirmer votre inscription.">
               <label className="flex text-orange-200 w-72 items-center justify-end">
                 Email :
                 <input
@@ -257,7 +270,7 @@ export default function Register() {
                     setEmailInputVal(ee.currentTarget.value);
                     HandleTxtChng();
                   }}
-                ></input>
+                />
               </label>
               <label
                 className="w-72 items-center justify-end pr-6 text-sm text-red-400 hidden"
@@ -268,23 +281,22 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="flex text-orange-200 w-72 items-center justify-end">
+              <label className="flex text-orange-200 w-72 items-center justify-end" title="Mot de passe d'accès au compte">
                 Mot de passe :
                 <input
                   className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
                   type={ShowPass ? "password" : "text"}
                   placeholder="Mot de passe"
                   required={true}
-                  //ref={PassInput}
                   onChange={(ee) => setPassInputVal(ee.currentTarget.value)}
-                ></input>
+                />
                 <svg
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.5"
                   viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
+                  width="20"
+                  height="20"
                   xmlns="http://www.w3.org/2000/svg"
                   aria-hidden="true"
                   onClick={() => {
@@ -310,8 +322,8 @@ export default function Register() {
                   stroke="currentColor"
                   strokeWidth="1.5"
                   viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
+                  width="20"
+                  height="20"
                   xmlns="http://www.w3.org/2000/svg"
                   aria-hidden="true"
                   onClick={() => {
@@ -329,23 +341,23 @@ export default function Register() {
                 </svg>
               </label>
 
-              <label className="flex text-orange-200 w-72 items-center justify-end">
+              <label className="flex text-orange-200 w-72 items-center justify-end" title="Veuillez retapper le mot de passe pour le confirmer">
                 Confirmer :
                 <input
                   className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
                   type={ShowPass2 ? "password" : "text"}
                   placeholder="Confirmer"
-                  required={true}
-                  //ref={PassInput2}
                   onChange={(ee) => setPassInput2Val(ee.currentTarget.value)}
-                ></input>
+                  required={true}
+
+                />
                 <svg
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.5"
                   viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
+                  width="20"
+                  height="20"
                   xmlns="http://www.w3.org/2000/svg"
                   aria-hidden="true"
                   onClick={() => {
@@ -371,8 +383,8 @@ export default function Register() {
                   stroke="currentColor"
                   strokeWidth="1.5"
                   viewBox="0 0 24 24"
-                  width="24"
-                  height="24"
+                  width="20"
+                  height="20"
                   xmlns="http://www.w3.org/2000/svg"
                   aria-hidden="true"
                   onClick={() => {
@@ -392,11 +404,11 @@ export default function Register() {
             </div>
           </div>
           <div className="border-t-2 border-gray-400 w-full m-2"></div>
-          <div className="flex w-full items-center">
+          <div className="flex w-full items-center ml-3">
             <label className="w-fit text-xs h-4  border text-transparent border-orange-200 rounded-lg mr-1 justify-center items-center">
               ***
             </label>
-            <label className="text-white w-fit text-xs justify-center items-center">
+            <label className="text-orange-200 w-fit text-xs justify-center items-center">
               Champs obligés
             </label>
             <h1 className="text-green-400 text-sm pl-24" hidden={!loading}>

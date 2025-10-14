@@ -72,32 +72,32 @@ export default function Login() {
             <li>
               <span>Email : </span>
               <input
-                className="m-1 rounded-md text-black bg-gray-400 pl-1"
+                className="m-1 rounded-md text-black bg-gray-300 pl-1"
                 type="email"
                 placeholder="Email"
                 required={true}
                 ref={EmailInput}
                 onChange={HandleTxtChng}
-              ></input>
+              />
             </li>
 
             <li className="flex flex-row justify-end">
               <span>Mot de passe : </span>
               <input
                 ref={PassInput}
-                className="m-1 rounded-md text-black bg-gray-400 pl-1"
+                className="m-1 rounded-md text-black bg-gray-300 pl-1"
                 type={ShowPass ? "text" : "password"}
                 placeholder="Mot de passe"
                 required={true}
                 onChange={HandleTxtChng}
-              ></input>
+              />
               <svg
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.5"
                 viewBox="0 0 24 24"
-                width="24"
-                height="24"
+                width="20"
+                height="20"
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
                 onClick={() => {
@@ -124,8 +124,8 @@ export default function Login() {
                 stroke="currentColor"
                 strokeWidth="1.5"
                 viewBox="0 0 24 24"
-                width="24"
-                height="24"
+                width="20"
+                height="20"
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
                 onClick={() => {

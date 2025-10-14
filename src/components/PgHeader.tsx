@@ -5,10 +5,12 @@ import { MainDroll } from "./MainDroll";
 export const PgHeader = () => {
   const [Drollmenue, Setdrollmenue] = useState(false);
   return (
-    <nav className="bg-teal-900">
+    <nav className="bg-teal-900 z-0">
       <div className="mx-auto max-sm:ml-0 max-md:ml-2 ml-8 ">
         <div className="relative flex h-20 items-center justify-between">
-          <div className="flex flex-grow items-center justify-center sm:justify-star">
+          <div className="flex flex-grow items-center justify-center sm:justify-star"
+            onMouseLeave={() => Setdrollmenue(false)}
+          >
             <div className="items-center min-w-fit ml-1">
               <Link to={".."}>
                 <img

@@ -86,12 +86,12 @@ const WilayaComboBox: React.FC<WilayaComboBoxProps> = ({ value, onChange }) => {
   };
 
   return (
-    <div className="relative w-45   m-1">
+    <div className="relative w-45  m-1">
       <div className="flex items-center">
         <input
           ref={inputRef}
           type="text"
-          className="w-full pl-1 border rounded-l-lg  outline-none focus:ring-2 focus:ring-blue-400 text-black"
+          className="text-black w-full pl-1 border rounded-l-lg"
           placeholder="Wilaya"
           value={value}
           onChange={(e) => {
