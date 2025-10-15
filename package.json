@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.74.0",
+    "@supabase/supabase-js": "^2.75.0",
     "@tailwindcss/vite": "^4.1.14",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -20,7 +20,8 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.3",
-    "react-slideshow-image": "^4.3.2"
+    "react-slideshow-image": "^4.3.2",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
@@ -35,7 +36,7 @@
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
     "postcss": "^8.5.6",
-    "supabase": "^2.48.3",
+    "supabase": "^2.51.0",
     "tailwindcss": "^4.1.14",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",

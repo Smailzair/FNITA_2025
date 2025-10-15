@@ -1,61 +1,55 @@
 import { useState } from "react";
 import { supabase } from "../api/supabaseClient";
+import { v4 as uuidv4 } from "uuid";
 
 export default function Register() {
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const [message, setMessage] = useState("");
+  const [email, setEmail] = useState("");
+  const [familyName, setFamilyName] = useState("");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    try {
-      const { data, error } = await supabase
-        .from("tb_login")
-        .insert([{ ...form, confirmed: false }])
-        .select("id")
-        .single();
+    const token = uuidv4(); // secure random token
+    const expires = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h validity
 
-      if (error) throw error;
+    const { data, error } = await supabase
+      .from("tb_login")
+      .insert([
+        { email: email, fam_nme: familyName, nme: name, pass: password, confirmed: false, confirm_token: token, confirm_expires: expires }
+      ])
+      .select("id")
+      .maybeSingle();
 
-      await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTION_URL}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: form.email,
-          name: form.name,
-          userId: data.id,
-        }),
-      });
-
-      setMessage("Check your email to confirm registration.");
-    } catch (err) {
-      console.error(err);
-      setMessage("Error during registration.");
+    if (error) {
+      alert("Registration failed: " + error.message);
+      return;
     }
-  };
+
+    const userId = data?.id;
+    const mailRes = await fetch("https://fnita.com/send-mail.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, familyName, name, userId, token }),
+    });
+    const mailJson = await mailRes.json();
+
+    if (!mailJson.success) {
+      console.log(mailJson);
+      alert("Erreur lors de l'envoi de l'email: " + (mailJson.message || "Unknown error"));
+      return;
+    }
+
+    alert("Enregistrement réussi! Veuillez vérifier votre email pour confirmer votre compte.");
+  }
 
   return (
-    <div className="p-4 max-w-sm mx-auto">
-      <h2>Register</h2>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-        <input name="nme" placeholder="nme" onChange={handleChange} />
-        <input
-          name="email"
-          placeholder="Email"
-          type="email"
-          onChange={handleChange}
-        />
-        <input
-          name="pass"
-          placeholder="Password"
-          type="pass"
-          onChange={handleChange}
-        />
-        <button type="submit">Register</button>
-      </form>
-      {message && <p>{message}</p>}
-    </div>
+    <form onSubmit={handleRegister}>
+      <input placeholder="Family Name" value={familyName} onChange={(e) => setFamilyName(e.target.value)} />
+      <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+      <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <button type="submit">Register</button>
+    </form>
   );
 }
