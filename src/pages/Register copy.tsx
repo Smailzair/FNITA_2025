@@ -2,8 +2,6 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import PgFooter from "../components/PgFooter";
 import { PgHeader } from "../components/PgHeader";
 import WilayaComboBox from "../components/WilayaComboBox";
-import { supabase } from "../api/supabaseClient";
-import { useNavigate } from "react-router-dom";
 
 export default function Register() {
   const [loading, setLoading] = useState(false);
@@ -30,9 +28,6 @@ export default function Register() {
 
   const CptExist = useRef<HTMLLabelElement | null>(null);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const [message, setMessage] = useState('')
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
@@ -58,43 +53,26 @@ export default function Register() {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
-  async function HandleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  function HandleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     setLoading(true);
-
-    // --------------------------------------------------------
-    if (PassInput_val !== PassInput2_val) {
-      setLoading(false);
-      alert("Error: mot de passe non confirmé");
-      return;
-    }
-
-    const { error } = await supabase.auth.signUp({
-      email: EmailInput_val,
-      password: PassInput_val,
-      options: {
-        emailRedirectTo: `${window.location.origin}/Login`,
-        data: {
-          pass: PassInput_val, // <--- doublé pour passer au tb_login
-          fam_nme: FamnmeInput_val,
-          nme: NmeInput_val,
-          phone: TelNum_val,
-          address: Addr_val,
-          city: Cityy_val,
-          num_cni: CNI_val,
-          num_anv: ANV_val,
-          wilaya: SelectedWilaya,
-          type: SelectedRadio
-        }
-      }
-    })
-    if (error) setMessage(error.message)
-    else {
-      setMessage('✅ Check your email to confirm registration.');
-      await alert('✅ Check your email to confirm registration.');
-
-      navigate(`/Login`);
-    }
+    // ------------------- Just for debugging tmp -------------------
+    console.log(
+      FamnmeInput_val,
+      NmeInput_val,
+      EmailInput_val,
+      PassInput_val,
+      PassInput2_val,
+      TelNum_val
+    );
+    console.log(
+      Addr_val,
+      Cityy_val,
+      CNI_val,
+      ANV_val,
+      SelectedWilaya,
+      SelectedRadio
+    );
     //---------------------------------------------------------
     setLoading(false);
   }
@@ -481,9 +459,6 @@ export default function Register() {
             >
               Enregistrer
             </button>
-            <p className="text-red-800 font-semibold text-md " hidden={message === ""}>
-              {message}
-            </p>
           </div>
         </form>
       </div>

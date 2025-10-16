@@ -76,7 +76,7 @@ export const PgHeader = () => {
             <div className="min-md:block inset-y-0 right-0 flex items-center pr-2">
               <button
                 type="button"
-                className="rounded-full bg-gray-800 p-1 text-gray-400  hover:text-white hover:outline-3 hover:outline-gray-800"
+                className="rounded-full bg-gray-800 p-1 text-gray-400  hover:text-white hover:outline-3 hover:outline-gray-800 focus:!outline-none"
                 onMouseEnter={() => Setdrollmenue(true)}
                 onClick={() => Setdrollmenue(!Drollmenue)}
               >

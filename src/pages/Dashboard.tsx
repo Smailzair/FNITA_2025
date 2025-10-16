@@ -5,7 +5,8 @@ export default function Dashboard() {
     <div className="flex flex-col w-screen h-screen">
       <PgHeader2 />
       <div style={{ maxWidth: 400, margin: "auto" }}>
-        <h2>Welcome</h2>
+        <h2>Bienvenue !</h2>
+        <p>(en train de developper)</p>
       </div>
     </div>
   );
