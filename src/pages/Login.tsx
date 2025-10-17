@@ -63,11 +63,15 @@ export default function Login() {
   return (
     <div className="flex flex-col w-screen h-screen">
       <PgHeader />
-      <div className="flex justify-center items-center h-[calc(100vh-7.25rem)] w-full">
+      <div className="flex flex-col justify-center items-center h-[calc(100vh-7.25rem)] w-full">
         <form
           className="bg-stone-500 flex items-center justify-around flex-col h-fit w-fit p-2 rounded-lg"
           onSubmit={handleLogin}
         >
+          <h1 className="text-2xl font-bold text-slate-300 text-center items-center w-fit">
+            Connexion
+          </h1>
+          <div className="border-t-1 border-gray-400 w-[80%] m-2 " />
           <ul className="flex flex-col items-end pt-2">
             <li>
               <span>Email : </span>
@@ -104,8 +108,9 @@ export default function Login() {
                   SetshowPass(true);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${ShowPass ? "hidden" : ""
-                  }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${
+                  ShowPass ? "hidden" : ""
+                }`}
               >
                 <path
                   strokeLinecap="round"
@@ -118,7 +123,6 @@ export default function Login() {
                   d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                 ></path>
               </svg>
-
               <svg
                 fill="none"
                 stroke="currentColor"
@@ -132,8 +136,9 @@ export default function Login() {
                   SetshowPass(false);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${!ShowPass ? "hidden" : ""
-                  }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${
+                  !ShowPass ? "hidden" : ""
+                }`}
               >
                 <path
                   strokeLinecap="round"
@@ -149,8 +154,9 @@ export default function Login() {
               <Link
                 // to={`/Register/${EmailInput.current ? EmailInput.current.value : ""
                 //   }`}
-                to={`/Register${EmailInput.current ? "?email=" + EmailInput.current.value : ""
-                  }`}
+                to={`/Register${
+                  EmailInput.current ? "?email=" + EmailInput.current.value : ""
+                }`}
                 className="text-yellow-400 text-center text-xs flex font-semibold underline mr-10"
                 hidden={true}
                 ref={NewUserLink}
@@ -160,8 +166,9 @@ export default function Login() {
                 créer un compte?
               </Link>
               <Link
-                to={`/Pages/PassForget/${EmailInput.current ? EmailInput.current.value : ""
-                  }`}
+                to={`/Pages/PassForget/${
+                  EmailInput.current ? EmailInput.current.value : ""
+                }`}
                 className="text-red-400 text-center text-xs flex font-semibold underline mr-10"
                 hidden={true}
                 ref={ForgottenLink}

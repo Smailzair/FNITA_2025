@@ -7,6 +7,7 @@ import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Register from "./pages/Register";
+import EmailConfirm from "./pages/email_confirm";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -14,6 +15,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route
+          path="/email_confirm/:token_hash/:type"
+          element={<EmailConfirm />}
+        />
         <Route
           path="/dashboard"
           element={

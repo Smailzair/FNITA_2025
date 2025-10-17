@@ -12,25 +12,28 @@ export default function Register() {
   const PassInput = useRef<HTMLInputElement | null>(null);
   const PassInput2 = useRef<HTMLInputElement | null>(null);
 
-  const [FamnmeInput_val, setFamnmeInputVal] = useState("");
-  const [NmeInput_val, setNmeInputVal] = useState("");
-  const [EmailInput_val, setEmailInputVal] = useState("");
-  const [PassInput_val, setPassInputVal] = useState("");
-  const [PassInput2_val, setPassInput2Val] = useState("");
-  const [TelNum_val, setTelNumVal] = useState("");
-  const [Addr_val, setAddrVal] = useState("");
-  const [Cityy_val, setCityyVal] = useState("");
-  const [CNI_val, setCNIVal] = useState("");
-  const [ANV_val, setANVVal] = useState("");
+  const [formData, setFormData] = useState({
+    famName: "",
+    name: "",
+    email: "",
+    password: "",
+    password2: "",
+    telNum: "",
+    address: "",
+    city: "",
+    cni: "",
+    anv: "",
+    wilaya: "",
+  });
 
   const [ShowPass, SetshowPass] = useState(true);
   const [ShowPass2, SetshowPass2] = useState(true);
-  const [SelectedRadio, setSelectedRadio] = useState("Vétérinaire");
-  const [SelectedWilaya, setSelectedWilaya] = useState<string | null>(null);
+  const [selectedRadio, setSelectedRadio] = useState("Vétérinaire");
 
   const CptExist = useRef<HTMLLabelElement | null>(null);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const navigate = useNavigate();
 
@@ -46,8 +49,8 @@ export default function Register() {
     function handleResize() {
       setIsSmallScreen(
         (window.innerHeight <= 455 && window.innerWidth > 490) ||
-        (window.innerHeight <= 600 && window.innerWidth <= 500) ||
-        (window.innerHeight <= 600 && window.innerWidth <= 338)
+          (window.innerHeight <= 600 && window.innerWidth <= 500) ||
+          (window.innerHeight <= 600 && window.innerWidth <= 338)
       );
     }
 
@@ -58,49 +61,74 @@ export default function Register() {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
-  async function HandleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function HandleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ): Promise<void> {
     event.preventDefault();
     setLoading(true);
 
     // --------------------------------------------------------
-    if (PassInput_val !== PassInput2_val) {
+    if (formData.password.search(/\s/) !== -1) {
       setLoading(false);
-      alert("Error: mot de passe non confirmé");
+      setPasswordError("bg-red-400");
+      setMessage("Error: mot de passe contient des espaces");
+      return;
+    }
+    if (formData.password.length < 6) {
+      setLoading(false);
+      setPasswordError("bg-red-400");
+      setMessage("Error: mot de passe trop court (min 6 caractères)");
+      return;
+    }
+    if (formData.password !== formData.password2) {
+      setLoading(false);
+      setPasswordError("bg-red-400");
+      setMessage("Error: mot de passe non bien confirmé");
       return;
     }
 
     const { error } = await supabase.auth.signUp({
-      email: EmailInput_val,
-      password: PassInput_val,
+      email: formData.email,
+      password: formData.password,
       options: {
         emailRedirectTo: `${window.location.origin}/Login`,
         data: {
-          pass: PassInput_val, // <--- doublé pour passer au tb_login
-          fam_nme: FamnmeInput_val,
-          nme: NmeInput_val,
-          phone: TelNum_val,
-          address: Addr_val,
-          city: Cityy_val,
-          num_cni: CNI_val,
-          num_anv: ANV_val,
-          wilaya: SelectedWilaya,
-          type: SelectedRadio
-        }
-      }
-    })
-    if (error) setMessage(error.message)
+          pass: formData.password, // <--- doublé pour passer au tb_login
+          fam_nme: formData.famName,
+          nme: formData.name,
+          phone: formData.telNum,
+          address: formData.address,
+          city: formData.city,
+          num_cni: formData.cni,
+          num_anv: formData.anv,
+          wilaya: formData.wilaya,
+          type: selectedRadio,
+        },
+      },
+    });
+    setLoading(false);
+    if (error) setMessage(error.message);
     else {
-      setMessage('✅ Check your email to confirm registration.');
-      await alert('✅ Check your email to confirm registration.');
+      setMessage("✅ verifier votre email pour confirmer l'inscription.");
+      await alert("✅ verifier votre email pour confirmer l'inscription.");
 
       navigate(`/Login`);
     }
     //---------------------------------------------------------
-    setLoading(false);
   }
+  function handleFormChange(e: React.ChangeEvent<HTMLFormElement>) {
+    const { name, value } = e.target;
 
-  function HandleTxtChng() {
-    console.log("ok");
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+
+    if (name === "password" || name === "password2") {
+      setPasswordError("");
+    }
+
+    setMessage("");
   }
 
   return (
@@ -110,11 +138,15 @@ export default function Register() {
         <form
           className="bg-stone-500 flex flex-row flex-wrap items-center justify-center p-2 rounded-lg min-w-80 max-w-2xl"
           onSubmit={HandleSubmit}
+          onChange={handleFormChange}
         >
           {!isSmallScreen && (
-            <h1 className="text-2xl text-slate-300 text-center items-center w-fit mb-4">
-              -- Nouveau utilisateur --
-            </h1>
+            <>
+              <h1 className="text-2xl font-bold text-slate-300 text-center items-center w-fit">
+                Inscription
+              </h1>
+              <div className="border-t-1 border-gray-400 w-[80%] m-2 mb-4" />
+            </>
           )}
 
           <div className="row flex w-full justify-center items-center space-x-3">
@@ -136,7 +168,7 @@ export default function Register() {
                 <input
                   type="radio"
                   value="Vétérinaire"
-                  checked={SelectedRadio === "Vétérinaire"}
+                  checked={selectedRadio === "Vétérinaire"}
                   readOnly={true}
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
@@ -162,7 +194,7 @@ export default function Register() {
                 <input
                   type="radio"
                   value="Ayant-Droit"
-                  checked={SelectedRadio === "Ayant-Droit"}
+                  checked={selectedRadio === "Ayant-Droit"}
                   readOnly={true}
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
@@ -199,7 +231,7 @@ export default function Register() {
                 <input
                   type="radio"
                   value="Ayant-Droit"
-                  checked={SelectedRadio === "Propriétaire"}
+                  checked={selectedRadio === "Propriétaire"}
                   readOnly={true}
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
@@ -219,9 +251,10 @@ export default function Register() {
               <input
                 className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
                 type="text"
+                name="famName"
                 placeholder="Nom"
+                value={formData.famName}
                 required={true}
-                onChange={(ee) => setFamnmeInputVal(ee.currentTarget.value)}
               />
             </label>
             <label
@@ -232,25 +265,29 @@ export default function Register() {
               <input
                 className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
                 type="text"
+                name="name"
                 placeholder="Prénom"
+                value={formData.name}
                 required={true}
-                onChange={(ee) => setNmeInputVal(ee.currentTarget.value)}
               />
             </label>
             <label
-              className={`flex ${SelectedRadio === "Vétérinaire" ? "text-orange-200" : ""
-                } w-72 items-center justify-end`}
+              className={`flex ${
+                selectedRadio === "Vétérinaire" ? "text-orange-200" : ""
+              } w-72 items-center justify-end`}
               title="Numéro de téléphone"
             >
               N° Tél :
               <input
-                className={`m-1 rounded-md text-black pl-1 w-45  ${SelectedRadio === "Vétérinaire" ? "!border-orange-200" : ""
-                  }`}
+                className={`m-1 rounded-md text-black pl-1 w-45  ${
+                  selectedRadio === "Vétérinaire" ? "!border-orange-200" : ""
+                }`}
                 id="phone"
+                name="telNum"
                 type="tel"
                 placeholder="N° Tél"
-                required={SelectedRadio === "Vétérinaire"}
-                onChange={(ee) => setTelNumVal(ee.currentTarget.value)}
+                value={formData.telNum}
+                required={selectedRadio === "Vétérinaire"}
               />
             </label>
             <label
@@ -261,11 +298,12 @@ export default function Register() {
               <input
                 className="m-1 rounded-md text-black pl-1 w-45"
                 type="text"
+                name="cni"
+                value={formData.cni}
                 placeholder="N° Carte Nationale d'Identité"
-                onChange={(ee) => setCNIVal(ee.currentTarget.value)}
               />
             </label>
-            {SelectedRadio === "Vétérinaire" && (
+            {selectedRadio === "Vétérinaire" && (
               <label
                 className={"flex  w-72 items-center justify-end"}
                 title="Code de l'Autorité Vétérinaire Nationale"
@@ -274,16 +312,17 @@ export default function Register() {
                 <input
                   className="m-1 rounded-md text-black pl-1 w-45 "
                   type="text"
+                  name="anv"
+                  value={formData.anv}
                   placeholder="Code Autorité Vétérinaire Nationale"
-                  onChange={(ee) => setANVVal(ee.currentTarget.value)}
                 />
               </label>
             )}
             <label className="flex w-72 items-center justify-end cl">
               Wilaya :
               <WilayaComboBox
-                value={SelectedWilaya ?? ""}
-                onChange={setSelectedWilaya}
+                value={formData.wilaya ?? ""}
+                onChange={(val) => setFormData((p) => ({ ...p, wilaya: val }))}
               />
             </label>
             <label className="flex w-72 items-center justify-end">
@@ -291,16 +330,18 @@ export default function Register() {
               <input
                 className="m-1 rounded-md text-black pl-1 w-45"
                 type="text"
+                name="city"
+                value={formData.city}
                 placeholder="Cité"
-                onChange={(ee) => setCityyVal(ee.currentTarget.value)}
               />
             </label>
             <label className="flex w-72 items-start justify-end">
               <span className="mt-1">Adresse :</span>
               <textarea
+                name="address"
                 className="m-1 rounded-md text-black pl-1 w-45 h-15"
                 placeholder="Adresse"
-                onChange={(ee) => setAddrVal(ee.currentTarget.value)}
+                value={formData.address}
               />
             </label>
           </div>
@@ -316,13 +357,11 @@ export default function Register() {
                 <input
                   className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
                   type="email"
+                  name="email"
                   placeholder="Email"
+                  value={formData.email}
                   required={true}
                   ref={EmailInput}
-                  onChange={(ee) => {
-                    setEmailInputVal(ee.currentTarget.value);
-                    HandleTxtChng();
-                  }}
                 />
               </label>
               <label
@@ -340,11 +379,12 @@ export default function Register() {
               >
                 Mot de passe :
                 <input
-                  className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
+                  className={`m-1 rounded-md text-black pl-1 w-45 !border-orange-200 ${passwordError}`}
+                  name="password"
                   type={ShowPass ? "password" : "text"}
                   placeholder="Mot de passe"
+                  value={formData.password}
                   required={true}
-                  onChange={(ee) => setPassInputVal(ee.currentTarget.value)}
                 />
                 <svg
                   fill="none"
@@ -403,10 +443,11 @@ export default function Register() {
               >
                 Confirmer :
                 <input
-                  className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
+                  className={`m-1 rounded-md text-black pl-1 w-45 !border-orange-200 ${passwordError}`}
+                  name="password2"
                   type={ShowPass2 ? "password" : "text"}
                   placeholder="Confirmer"
-                  onChange={(ee) => setPassInput2Val(ee.currentTarget.value)}
+                  value={formData.password2}
                   required={true}
                 />
                 <svg
@@ -481,7 +522,9 @@ export default function Register() {
             >
               Enregistrer
             </button>
-            <p className="text-red-800 font-semibold text-md " hidden={message === ""}>
+            <p
+              className={` ${message.search("confirmer") !== -1 ? "text-green-800" : "text-red-800"} font-semibold text-md max-w-50 ${message === "" ? "hidden" : "block"}`}
+            >
               {message}
             </p>
           </div>
