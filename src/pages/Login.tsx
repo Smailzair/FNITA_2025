@@ -5,13 +5,14 @@ import { PgHeader } from "../components/PgHeader";
 import PgFooter from "../components/PgFooter";
 
 export default function Login() {
-  const [errorr, setError] = useState<string | null>(null);
+  // const [errorr, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const EmailInput = useRef<HTMLInputElement>(null);
   const PassInput = useRef<HTMLInputElement>(null);
   const ForgottenLink = useRef<HTMLAnchorElement>(null);
   const NewUserLink = useRef<HTMLAnchorElement>(null);
+  const notConfirmedEmail = useRef<HTMLHeadingElement>(null);
 
   const [ShowPass, SetshowPass] = useState(false);
 
@@ -39,9 +40,15 @@ export default function Login() {
       password: PassInput.current ? PassInput.current.value : "",
     });
     if (error) {
-      setError(error.message);
-      console.log(errorr);
-      if (ForgottenLink.current) {
+      // setError(error.message);
+      if (error.message === "Email not confirmed") {
+        // setError("Veuillez confirmer votre e-mail avant de vous connecter.");
+        if (EmailInput.current && notConfirmedEmail.current) {
+          EmailInput.current.classList.add("bg-orange-400");
+          notConfirmedEmail.current.hidden = false;
+          EmailInput.current.focus();
+        }
+      } else if (ForgottenLink.current) {
         ForgottenLink.current.hidden = false;
         if (PassInput.current) {
           PassInput.current.classList.add("bg-red-400");
@@ -152,8 +159,6 @@ export default function Login() {
           <div className="flex flex-row justify-end items-center w-full">
             <div className="flew flex-col">
               <Link
-                // to={`/Register/${EmailInput.current ? EmailInput.current.value : ""
-                //   }`}
                 to={`/Register${
                   EmailInput.current ? "?email=" + EmailInput.current.value : ""
                 }`}
@@ -166,7 +171,7 @@ export default function Login() {
                 créer un compte?
               </Link>
               <Link
-                to={`/Pages/PassForget/${
+                to={`/password_forgot/${
                   EmailInput.current ? EmailInput.current.value : ""
                 }`}
                 className="text-red-400 text-center text-xs flex font-semibold underline mr-10"
@@ -177,13 +182,26 @@ export default function Login() {
                 <br />
                 oublié?
               </Link>
-              {loading && (
-                <div className="mt-4 animate-spin h-10 w-10 border-2 border-t-blue-500 border-gray-200 rounded-full mx-auto" />
-              )}
+              <h1
+                className="text-orange-400 text-center text-xs flex font-semibold underline mr-10"
+                hidden={true}
+                ref={notConfirmedEmail}
+              >
+                Veuillez confirmer votre e-mail
+                <br />
+                avant de vous connecter.
+              </h1>
             </div>
 
-            <button className="bg-cyan-700 text-md border-1 outline-white outline-none hover:outline-black hover:text-black rounded-full p-1.5 m-2 mr-10 w-28">
+            <button
+              className="flex flex-row justify-center items-center bg-cyan-700 text-md border-1 outline-white outline-none hover:outline-black hover:text-black rounded-full p-2 mt-2 mr-10 w-inherit"
+              type="submit"
+              disabled={loading}
+            >
               Se Connecter
+              {loading && (
+                <div className="ml-2 animate-spin h-7 w-7 border-2 border-t-blue-500 border-gray-200 rounded-full mx-auto" />
+              )}
             </button>
           </div>
         </form>
