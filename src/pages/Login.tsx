@@ -177,11 +177,9 @@ export default function Login() {
                 <br />
                 oublié?
               </Link>
-              <h6
-                className={`text-green-400 text-xs ${loading ? "" : "hidden"}`}
-              >
-                Vieullez Patienter ..
-              </h6>
+              {loading && (
+                <div className="mt-4 animate-spin h-10 w-10 border-2 border-t-blue-500 border-gray-200 rounded-full mx-auto" />
+              )}
             </div>
 
             <button className="bg-cyan-700 text-md border-1 outline-white outline-none hover:outline-black hover:text-black rounded-full p-1.5 m-2 mr-10 w-28">

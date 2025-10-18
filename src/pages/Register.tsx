@@ -139,6 +139,8 @@ export default function Register() {
           className="bg-stone-500 flex flex-row flex-wrap items-center justify-center p-2 rounded-lg min-w-80 max-w-2xl"
           onSubmit={HandleSubmit}
           onChange={handleFormChange}
+          // enable browser autofill where possible
+          autoComplete="on"
         >
           {!isSmallScreen && (
             <>
@@ -253,6 +255,7 @@ export default function Register() {
                 type="text"
                 name="famName"
                 placeholder="Nom"
+                autoComplete="family-name"
                 value={formData.famName}
                 required={true}
               />
@@ -267,6 +270,8 @@ export default function Register() {
                 type="text"
                 name="name"
                 placeholder="Prénom"
+                // standard token for given/first name
+                autoComplete="given-name"
                 value={formData.name}
                 required={true}
               />
@@ -359,6 +364,7 @@ export default function Register() {
                   type="email"
                   name="email"
                   placeholder="Email"
+                  autoComplete="email"
                   value={formData.email}
                   required={true}
                   ref={EmailInput}
@@ -510,9 +516,14 @@ export default function Register() {
             <label className="text-orange-200 w-fit text-xs justify-center items-center">
               Champs obligés
             </label>
-            <h1 className="text-green-400 text-sm pl-24" hidden={!loading}>
-              Vieullez Patienter ..
-            </h1>
+            {loading && (
+              <>
+                <h1 className="text-lime-600 text-sm pl-24">
+                  Veuillez Patienter ..
+                </h1>
+                <div className="mt-4 animate-spin h-10 w-10 border-2 border-t-blue-500 border-gray-200 rounded-full mx-auto" />
+              </>
+            )}
           </div>
 
           <div className="row w-full flex justify-center ">
