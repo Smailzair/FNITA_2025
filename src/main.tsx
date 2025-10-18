@@ -15,10 +15,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route
-          path="/email_confirm/:token_hash/:type"
-          element={<EmailConfirm />}
-        />
+        <Route path="/email_confirm" element={<EmailConfirm />} />
         <Route
           path="/dashboard"
           element={

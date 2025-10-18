@@ -6,70 +6,59 @@ import { useNavigate } from "react-router-dom";
 import PgFooter from "../components/PgFooter";
 import { PgHeader } from "../components/PgHeader";
 
-type Status = "initial" | "loading" | "success" | "error";
+type Status = "loading" | "success" | "error";
 
 export default function EmailConfirm() {
-  const navigate = useNavigate();
-  const searchParams = new URLSearchParams(window.location.search);
-  const [status, setStatus] = useState<Status>("initial");
+  const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState("Vérification de votre compte...");
-  const [tokenData, setTokenData] = useState<{ tokenHash: string; type: string } | null>(null);
-
+  const navigate = useNavigate();
   // Use useEffect to run the verification logic once the component mounts
   useEffect(() => {
     // 1. Get query parameters from the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenHash = urlParams.get("token_hash");
+    const type = urlParams.get("type");
 
-    // 1. On load, only EXTRACT and STORE the token data.
-    const tokenHash = searchParams.get('token_hash');
-    const type = searchParams.get('type');
-
-    if (!tokenHash || type !== 'signup') {
-      setStatus('error');
-      setMessage('Lien de confirmation manquant ou invalide.');
+    if (!tokenHash || type !== "signup") {
+      setStatus("error");
+      setMessage("Lien de confirmation manquant ou invalide.");
       return;
     }
 
-    // Token found. Store it and wait for user action.
-    setTokenData({ tokenHash, type });
-    // The status remains 'initial' (or a new 'ready' status)
-  }, [searchParams]);
-  const handleConfirmClick = async () => {
-    if (!tokenData) return;
+    // Optional: Clean the URL for a cleaner display
+    // history.replaceState(null, '', '/email_confirm');
 
-    setStatus('loading');
-    setMessage('Confirmation en cours...');
+    const verifyToken = async () => {
+      // 2. Call the Supabase verification endpoint
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: "signup" as const, // 'signup' must be a valid EmailOtpType        
+      });
 
-    const { data, error } = await supabase.auth.verifyOtp({
-      token_hash: tokenData.tokenHash,
-      type: 'signup' as const,
-    });
+      console.log("Confirmation Data:", data);
+      console.log("Confirmation Error:", error);
 
-    if (error) {
-      setStatus('error');
-      setMessage(
-        `La vérification a échoué. Le lien a peut-être expiré ou a déjà été utilisé. Erreur: ${error.message}`
-      );
-      console.error('Confirmation Error:', error);
-    } else if (data.user) {
-      setStatus('success');
-      setMessage('Votre compte est maintenant confirmé !');
-    } else {
-      setStatus('error');
-      setMessage('Une erreur inattendue est survenue.');
-    }
-  };
-  const renderInitialState = () => (
-    <div className="text-center p-8 border border-gray-200 rounded-lg bg-white">
-      <h2 className="text-2xl font-bold text-blue-700 mb-4">Confirmer votre compte</h2>
-      <p className="text-gray-700 mb-6">Pour finaliser votre inscription, veuillez cliquer sur le bouton ci-dessous.</p>
-      <button
-        onClick={handleConfirmClick} // <-- Calls the verification function
-        className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-150"
-      >
-        Confirmer l'Email
-      </button>
-    </div>
-  );
+
+      if (error) {
+        // 3. Handle failure (e.g., token expired, invalid, or already used)
+        setStatus("error");
+        setMessage(
+          "La vérification a échoué. Le lien a peut-être expiré ou a déjà été utilisé."
+        );
+        console.error("Confirmation Error:", error);
+      } else if (data.user) {
+        // 4. Handle success (User is confirmed AND logged in)
+        setStatus("success");
+        setMessage("Votre compte est maintenant confirmé !");
+      } else {
+        // 5. Fallback for unexpected case (e.g., no error, but no user data)
+        setStatus("error");
+        setMessage("Une erreur inattendue est survenue.");
+      }
+    };
+
+    verifyToken();
+  }, []);
 
   // --- Render Functions ---
 
@@ -123,15 +112,9 @@ export default function EmailConfirm() {
     <div className="flex flex-col w-screen h-screen">
       <PgHeader />
       <div className="flex flex-col justify-center items-center h-[calc(100vh-7.25rem)] w-full">
-        {status === 'initial' && renderInitialState()}
-        {status === 'loading' && (
-          <div className="text-center py-8">
-            <p className="text-lg text-gray-600">{message}</p>
-            <div className="mt-4 animate-spin h-6 w-6 border-4 border-t-blue-500 border-gray-200 rounded-full mx-auto"></div>
-          </div>
-        )}
-        {status === 'success' && renderSuccess()}
-        {status === 'error' && renderError()}
+        {status === "success" && renderSuccess()}
+
+        {status === "error" && renderError()}
       </div>
       <PgFooter />
     </div>
