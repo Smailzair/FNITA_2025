@@ -36,3 +36,24 @@ export async function getUserByEmail(email: string) {
 
   return data; // will be null if not found
 }
+
+export async function sendPasswordResetEmail(email: string) {
+  if (email === "") return;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    // CRUCIAL: This is the URL where the user will land after clicking the link in the email.
+    // It should point to a page in your app that handles the actual password change form.
+    redirectTo:
+      "https://fnita.com/update_password?token_hash={token}&type=recovery",
+  });
+
+  if (error) {
+    console.error("Password reset failed:", error.message);
+    alert(
+      "Erreur de renitialisation de mot de passe. Veuillez essayer plus tard."
+    );
+  } else {
+    alert(
+      "Un lien de renitialisation de mot de passe a été envoyé à votre email."
+    );
+  }
+}

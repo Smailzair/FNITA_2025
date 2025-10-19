@@ -1,5 +1,9 @@
 import { useRef, useState } from "react";
-import { emailExists, supabase } from "../api/supabaseClient";
+import {
+  emailExists,
+  sendPasswordResetEmail,
+  supabase,
+} from "../api/supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
 import { PgHeader } from "../components/PgHeader";
 import PgFooter from "../components/PgFooter";
@@ -10,7 +14,7 @@ export default function Login() {
 
   const EmailInput = useRef<HTMLInputElement>(null);
   const PassInput = useRef<HTMLInputElement>(null);
-  const ForgottenLink = useRef<HTMLAnchorElement>(null);
+  const ForgottenLink = useRef<HTMLButtonElement>(null);
   const NewUserLink = useRef<HTMLAnchorElement>(null);
   const notConfirmedEmail = useRef<HTMLHeadingElement>(null);
 
@@ -170,18 +174,23 @@ export default function Login() {
                 <br />
                 créer un compte?
               </Link>
-              <Link
-                to={`/password_forgot/${
-                  EmailInput.current ? EmailInput.current.value : ""
-                }`}
-                className="text-red-400 text-center text-xs flex font-semibold underline mr-10"
+              <button
+                // to={`/password_forgot/${
+                //   EmailInput.current ? EmailInput.current.value : ""
+                // }`}
+                className="text-red-400 text-center text-xs flex font-semibold underline mr-10 bg-transparent hover:bg-transparent border-none hover:text-red-600"
                 hidden={true}
                 ref={ForgottenLink}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  e.currentTarget.hidden = true;
+                  sendPasswordResetEmail(EmailInput.current?.value || "");
+                  navigate("/login");
+                }}
               >
                 Mot de passe
                 <br />
                 oublié?
-              </Link>
+              </button>
               <h1
                 className="text-orange-400 text-center text-xs flex font-semibold underline mr-10"
                 hidden={true}
