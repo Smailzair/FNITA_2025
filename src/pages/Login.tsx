@@ -9,19 +9,21 @@ import { PgHeader } from "../components/PgHeader";
 import PgFooter from "../components/PgFooter";
 
 export default function Login() {
-  // const [errorr, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<"wrong-password" | "email-not-found" | "email-not-confirmed" | null>(null);
 
   const EmailInput = useRef<HTMLInputElement>(null);
   const PassInput = useRef<HTMLInputElement>(null);
-  const ForgottenLink = useRef<HTMLButtonElement>(null);
-  const NewUserLink = useRef<HTMLAnchorElement>(null);
-  const notConfirmedEmail = useRef<HTMLHeadingElement>(null);
 
   const [resetSent, setResetSent] = useState(false);
   const [ShowPass, SetshowPass] = useState(false);
 
   const navigate = useNavigate();
+
+  const clearErrors = () => {
+    setError(null);
+    setResetSent(false);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,46 +32,28 @@ export default function Login() {
     //-------- Check if the email exists in the database
     const emailAdressExists = await emailExists(EmailInput.current.value);
     if (!emailAdressExists) {
-      if (NewUserLink.current) {
-        NewUserLink.current.hidden = false;
-        EmailInput.current.classList.add("bg-orange-400");
-        EmailInput.current.focus();
-      }
+      setError("email-not-found");
+      EmailInput.current?.focus();
       setLoading(false);
       return;
     }
     //---------------------------------------------
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email: EmailInput.current.value,
       password: PassInput.current ? PassInput.current.value : "",
     });
-    if (error) {
-      // setError(error.message);
-      if (error.message === "Email not confirmed") {
-        // setError("Veuillez confirmer votre e-mail avant de vous connecter.");
-        if (EmailInput.current && notConfirmedEmail.current) {
-          EmailInput.current.classList.add("bg-orange-400");
-          notConfirmedEmail.current.hidden = false;
-          EmailInput.current.focus();
-        }
-      } else if (ForgottenLink.current && PassInput.current) {
-        ForgottenLink.current.hidden = resetSent === false;
-        PassInput.current.classList.add("bg-red-400");
-        PassInput.current.focus();
-        PassInput.current.select();
+    if (signInError) {
+      if (signInError.message === "Email not confirmed") {
+        setError("email-not-confirmed");
+        EmailInput.current?.focus();
+      } else if (signInError.message === "Invalid login credentials") {
+        setError("wrong-password");
+        PassInput.current?.focus();
+        PassInput.current?.select();
       }
     } else navigate("/dashboard");
     setLoading(false);
-  };
-
-  const HandleTxtChng = () => {
-    EmailInput.current?.classList.remove("bg-orange-400");
-    PassInput.current?.classList.remove("bg-red-400");
-    if (ForgottenLink.current) ForgottenLink.current.hidden = true;
-    setResetSent(false);
-    if (NewUserLink.current) NewUserLink.current.hidden = true;
-    if (notConfirmedEmail.current) notConfirmedEmail.current.hidden = true;
   };
 
   return (
@@ -88,12 +72,13 @@ export default function Login() {
             <li>
               <span>Email : </span>
               <input
-                className="m-1 rounded-md text-black bg-gray-300 pl-1"
+                className={`m-1 rounded-md text-black bg-gray-300 pl-1 ${error === "email-not-found" || error === "email-not-confirmed" ? "bg-orange-400" : ""
+                  }`}
                 type="email"
                 placeholder="Email"
                 required={true}
                 ref={EmailInput}
-                onChange={HandleTxtChng}
+                onChange={clearErrors}
               />
             </li>
 
@@ -101,11 +86,12 @@ export default function Login() {
               <span>Mot de passe : </span>
               <input
                 ref={PassInput}
-                className="m-1 rounded-md text-black bg-gray-300 pl-1"
+                className={`m-1 rounded-md text-black bg-gray-300 pl-1 ${error === "wrong-password" ? "bg-red-400" : ""
+                  }`}
                 type={ShowPass ? "text" : "password"}
                 placeholder="Mot de passe"
                 required={true}
-                onChange={HandleTxtChng}
+                onChange={clearErrors}
               />
               <svg
                 fill="none"
@@ -120,9 +106,8 @@ export default function Login() {
                   SetshowPass(true);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${
-                  ShowPass ? "hidden" : ""
-                }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${ShowPass ? "hidden" : ""
+                  }`}
               >
                 <path
                   strokeLinecap="round"
@@ -148,9 +133,8 @@ export default function Login() {
                   SetshowPass(false);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${
-                  !ShowPass ? "hidden" : ""
-                }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${!ShowPass ? "hidden" : ""
+                  }`}
               >
                 <path
                   strokeLinecap="round"
@@ -163,50 +147,45 @@ export default function Login() {
 
           <div className="flex flex-row justify-end items-center w-full">
             <div className="flew flex-col">
-              <Link
-                to={`/Register${
-                  EmailInput.current ? "?email=" + EmailInput.current.value : ""
-                }`}
-                className="text-yellow-400 text-center text-xs flex font-semibold mr-10"
-                hidden={true}
-                ref={NewUserLink}
-              >
-                Email non enregistré
-                <br />
-                créer un compte?
-              </Link>
-              <button
-                // to={`/password_forgot/${
-                //   EmailInput.current ? EmailInput.current.value : ""
-                // }`}
-                className="text-red-400 text-center text-xs flex font-semibold mr-10 bg-transparent hover:bg-transparent border-none hover:text-red-600"
-                hidden={true}
-                ref={ForgottenLink}
-                onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
-                  e.currentTarget.hidden = true;
-                  await sendPasswordResetEmail(EmailInput.current?.value || "");
-                  setResetSent(true);
-                }}
-              >
-                Mot de passe
-                <br />
-                oublié?
-              </button>
-              {resetSent && (
-                <p className="text-lime-600 text-xs mr-10">
+              {error === "email-not-found" && (
+                <Link
+                  to={`/Register${EmailInput.current ? "?email=" + EmailInput.current.value : ""
+                    }`}
+                  className="text-yellow-400 text-center text-xs flex font-semibold mr-4"
+                >
+                  Email non enregistré
+                  <br />
+                  créer un compte?
+                </Link>
+              )}
+              {error === "wrong-password" && !resetSent && (
+                <button
+                  className="text-red-400 text-center text-xs flex font-semibold mr-10 bg-transparent hover:bg-transparent border-none hover:text-red-600"
+                  onClick={async () => {
+                    await sendPasswordResetEmail(EmailInput.current?.value || "");
+                    setResetSent(true);
+                  }}
+                >
+                  Mot de passe
+                  <br />
+                  oublié?
+                </button>
+              )}
+              {error === "wrong-password" && resetSent && (
+                <p className="text-yellow-400 text-center text-xs mr-4">
                   Un lien de réinitialisation
                   <br />a été envoyé a votre email.
                 </p>
               )}
-              <h1
-                className="text-orange-400 text-center text-xs flex font-semibold mr-10"
-                hidden={true}
-                ref={notConfirmedEmail}
-              >
-                Veuillez confirmer votre e-mail
-                <br />
-                avant de vous connecter.
-              </h1>
+              {error === "email-not-confirmed" && (
+                <h1
+                  className="text-yellow-400 text-center text-xs flex font-semibold mr-4"
+                >
+                  Veuillez confirmer votre e-mail
+                  <br />
+                  avant de vous connecter.
+                </h1>
+              )}
             </div>
 
             <button
