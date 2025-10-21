@@ -27,7 +27,7 @@ export const PgHeader2 = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/");
+    navigate("/login");
   };
 
   return (

@@ -18,6 +18,7 @@ export default function Login() {
   const NewUserLink = useRef<HTMLAnchorElement>(null);
   const notConfirmedEmail = useRef<HTMLHeadingElement>(null);
 
+  const [resetSent, setResetSent] = useState(false);
   const [ShowPass, SetshowPass] = useState(false);
 
   const navigate = useNavigate();
@@ -52,13 +53,11 @@ export default function Login() {
           notConfirmedEmail.current.hidden = false;
           EmailInput.current.focus();
         }
-      } else if (ForgottenLink.current) {
-        ForgottenLink.current.hidden = false;
-        if (PassInput.current) {
-          PassInput.current.classList.add("bg-red-400");
-          PassInput.current.focus();
-          PassInput.current.select();
-        }
+      } else if (ForgottenLink.current && PassInput.current) {
+        ForgottenLink.current.hidden = resetSent === false;
+        PassInput.current.classList.add("bg-red-400");
+        PassInput.current.focus();
+        PassInput.current.select();
       }
     } else navigate("/dashboard");
     setLoading(false);
@@ -68,7 +67,9 @@ export default function Login() {
     EmailInput.current?.classList.remove("bg-orange-400");
     PassInput.current?.classList.remove("bg-red-400");
     if (ForgottenLink.current) ForgottenLink.current.hidden = true;
+    setResetSent(false);
     if (NewUserLink.current) NewUserLink.current.hidden = true;
+    if (notConfirmedEmail.current) notConfirmedEmail.current.hidden = true;
   };
 
   return (
@@ -166,7 +167,7 @@ export default function Login() {
                 to={`/Register${
                   EmailInput.current ? "?email=" + EmailInput.current.value : ""
                 }`}
-                className="text-yellow-400 text-center text-xs flex font-semibold underline mr-10"
+                className="text-yellow-400 text-center text-xs flex font-semibold mr-10"
                 hidden={true}
                 ref={NewUserLink}
               >
@@ -178,21 +179,27 @@ export default function Login() {
                 // to={`/password_forgot/${
                 //   EmailInput.current ? EmailInput.current.value : ""
                 // }`}
-                className="text-red-400 text-center text-xs flex font-semibold underline mr-10 bg-transparent hover:bg-transparent border-none hover:text-red-600"
+                className="text-red-400 text-center text-xs flex font-semibold mr-10 bg-transparent hover:bg-transparent border-none hover:text-red-600"
                 hidden={true}
                 ref={ForgottenLink}
-                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
                   e.currentTarget.hidden = true;
-                  sendPasswordResetEmail(EmailInput.current?.value || "");
-                  navigate("/login");
+                  await sendPasswordResetEmail(EmailInput.current?.value || "");
+                  setResetSent(true);
                 }}
               >
                 Mot de passe
                 <br />
                 oublié?
               </button>
+              {resetSent && (
+                <p className="text-lime-600 text-xs mr-10">
+                  Un lien de réinitialisation
+                  <br />a été envoyé a votre email.
+                </p>
+              )}
               <h1
-                className="text-orange-400 text-center text-xs flex font-semibold underline mr-10"
+                className="text-orange-400 text-center text-xs flex font-semibold mr-10"
                 hidden={true}
                 ref={notConfirmedEmail}
               >
