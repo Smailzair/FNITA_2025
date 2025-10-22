@@ -16,6 +16,7 @@ export default function Login() {
   const PassInput = useRef<HTMLInputElement>(null);
 
   const [resetSent, setResetSent] = useState(false);
+  const [resetErrMsg, setResetErrMsg] = useState("");
   const [ShowPass, SetshowPass] = useState(false);
 
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function Login() {
   const clearErrors = () => {
     setError(null);
     setResetSent(false);
+    setResetErrMsg("");
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -162,8 +164,9 @@ export default function Login() {
                 <button
                   className="text-red-400 text-center text-xs flex font-semibold mr-10 bg-transparent hover:bg-transparent border-none hover:text-red-600"
                   onClick={async () => {
-                    await sendPasswordResetEmail(EmailInput.current?.value || "");
-                    setResetSent(true);
+                    const { success, message } = await sendPasswordResetEmail(EmailInput.current?.value || "");
+                    setResetSent(success);
+                    if (!success) setResetErrMsg(message);
                   }}
                 >
                   Mot de passe
@@ -175,6 +178,11 @@ export default function Login() {
                 <p className="text-yellow-400 text-center text-xs mr-4">
                   Un lien de réinitialisation
                   <br />a été envoyé a votre email.
+                </p>
+              )}
+              {error === "wrong-password" && !resetSent && resetErrMsg.length > 0 && (
+                <p className="text-yellow-400 text-center text-xs mr-4">
+                  {resetErrMsg}
                 </p>
               )}
               {error === "email-not-confirmed" && (
