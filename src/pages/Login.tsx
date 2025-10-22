@@ -10,7 +10,9 @@ import PgFooter from "../components/PgFooter";
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<"wrong-password" | "email-not-found" | "email-not-confirmed" | null>(null);
+  const [error, setError] = useState<
+    "wrong-password" | "email-not-found" | "email-not-confirmed" | null
+  >(null);
 
   const EmailInput = useRef<HTMLInputElement>(null);
   const PassInput = useRef<HTMLInputElement>(null);
@@ -74,8 +76,11 @@ export default function Login() {
             <li>
               <span>Email : </span>
               <input
-                className={`m-1 rounded-md text-black bg-gray-300 pl-1 ${error === "email-not-found" || error === "email-not-confirmed" ? "bg-orange-400" : ""
-                  }`}
+                className={`m-1 rounded-md text-black pl-1 ${
+                  error === "email-not-found" || error === "email-not-confirmed"
+                    ? "bg-orange-400"
+                    : "bg-gray-300"
+                }`}
                 type="email"
                 placeholder="Email"
                 required={true}
@@ -88,8 +93,9 @@ export default function Login() {
               <span>Mot de passe : </span>
               <input
                 ref={PassInput}
-                className={`m-1 rounded-md text-black bg-gray-300 pl-1 ${error === "wrong-password" ? "bg-red-400" : ""
-                  }`}
+                className={`m-1 rounded-md text-black pl-1 ${
+                  error === "wrong-password" ? "bg-red-400" : "bg-gray-300"
+                }`}
                 type={ShowPass ? "text" : "password"}
                 placeholder="Mot de passe"
                 required={true}
@@ -108,8 +114,9 @@ export default function Login() {
                   SetshowPass(true);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${ShowPass ? "hidden" : ""
-                  }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${
+                  ShowPass ? "hidden" : ""
+                }`}
               >
                 <path
                   strokeLinecap="round"
@@ -135,8 +142,9 @@ export default function Login() {
                   SetshowPass(false);
                   PassInput.current?.focus();
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${!ShowPass ? "hidden" : ""
-                  }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${
+                  !ShowPass ? "hidden" : ""
+                }`}
               >
                 <path
                   strokeLinecap="round"
@@ -151,8 +159,11 @@ export default function Login() {
             <div className="flew flex-col">
               {error === "email-not-found" && (
                 <Link
-                  to={`/Register${EmailInput.current ? "?email=" + EmailInput.current.value : ""
-                    }`}
+                  to={`/Register${
+                    EmailInput.current
+                      ? "?email=" + EmailInput.current.value
+                      : ""
+                  }`}
                   className="text-yellow-400 text-center text-xs flex font-semibold mr-4"
                 >
                   Email non enregistré
@@ -164,7 +175,9 @@ export default function Login() {
                 <button
                   className="text-red-400 text-center text-xs flex font-semibold mr-10 bg-transparent hover:bg-transparent border-none hover:text-red-600"
                   onClick={async () => {
-                    const { success, message } = await sendPasswordResetEmail(EmailInput.current?.value || "");
+                    const { success, message } = await sendPasswordResetEmail(
+                      EmailInput.current?.value || ""
+                    );
                     setResetSent(success);
                     if (!success) setResetErrMsg(message);
                   }}
@@ -180,15 +193,15 @@ export default function Login() {
                   <br />a été envoyé a votre email.
                 </p>
               )}
-              {error === "wrong-password" && !resetSent && resetErrMsg.length > 0 && (
-                <p className="text-yellow-400 text-center text-xs mr-4">
-                  {resetErrMsg}
-                </p>
-              )}
+              {error === "wrong-password" &&
+                !resetSent &&
+                resetErrMsg.length > 0 && (
+                  <p className="text-yellow-400 text-center text-xs mr-4">
+                    {resetErrMsg}
+                  </p>
+                )}
               {error === "email-not-confirmed" && (
-                <h1
-                  className="text-yellow-400 text-center text-xs flex font-semibold mr-4"
-                >
+                <h1 className="text-yellow-400 text-center text-xs flex font-semibold mr-4">
                   Veuillez confirmer votre e-mail
                   <br />
                   avant de vous connecter.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../api/supabaseClient";
 import PgFooter from "../components/PgFooter";
@@ -15,6 +15,11 @@ const UpdatePasswordPage: React.FC = () => {
     "Vérification du jeton de réinitialisation..."
   );
   const [error, setError] = useState<string | null>(null);
+  const [SecondPassError, setSecondPassError] = useState(false);
+  const [ShowPass, SetshowPass] = useState(true);
+  const [ShowPass2, SetshowPass2] = useState(true);
+  const PassInput = useRef<HTMLInputElement | null>(null);
+  const PassInput2 = useRef<HTMLInputElement | null>(null);
 
   // States to hold the token data once read from URL
   //   const [tokenHash, setTokenHash] = useState<string | null>(null);
@@ -71,7 +76,8 @@ const UpdatePasswordPage: React.FC = () => {
       return;
     }
     if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
+      setSecondPassError(true);
+      // setError("Les mots de passe ne correspondent pas.");
       return;
     }
 
@@ -83,16 +89,37 @@ const UpdatePasswordPage: React.FC = () => {
       password: password,
     });
 
-    setLoading(false);
-
     if (updateError) {
       // If the token expires between verifyOtp and updateUser, this might fail.
       setError(
         `Échec de la mise à jour: ${updateError.message}. Le jeton a peut-être expiré.`
       );
+      setLoading(false);
     } else {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      // 2. Check if a user is authenticated
+      if (!user) {
+        // Handle the case where there is no active session (user is logged out)
+        console.error("No authenticated user found.");
+        return; // Stop the update process
+      }
+
+      // 3. Now you have the user.id, you can proceed with the update
+      const { error } = await supabase
+        .from("tb_login")
+        .update({ pass: password })
+        .eq("id", user.id);
+      if (error) {
+        console.log("Password updated successfully:", error);
+      }
+      //-------------------
+      setLoading(false);
+      //-------------
       setMessage("Mot de passe mis à jour avec succès ! Redirection...");
-      setTimeout(() => navigate("/dashboard"), 1500);
+      setTimeout(() => navigate("/dashboard"), 2500);
     }
   };
 
@@ -142,51 +169,153 @@ const UpdatePasswordPage: React.FC = () => {
       <div className="flex flex-col justify-center items-center h-[calc(100vh-7.25rem)] w-full">
         <form
           onSubmit={handlePasswordUpdate}
-          className="p-8 bg-white shadow-xl rounded-xl max-w-md w-full"
+          className="bg-stone-500 flex items-center justify-around flex-col h-fit w-fit p-2 rounded-lg"
         >
-          <h1 className="text-2xl font-bold mb-6 text-gray-800 text-center">
+          <h1 className="text-2xl font-bold text-slate-300 text-center items-center w-fit">
             Mettre à Jour le Mot de Passe
           </h1>
-
+          <div className="border-t-1 border-gray-400 w-[80%] m-2 " />
           {message && message.includes("succès") && (
             <p className="mb-4 text-green-600 text-center font-medium">
               {message}
             </p>
           )}
 
-          <div className="mb-4">
-            <label
-              htmlFor="password"
-              className="block text-gray-700 text-sm font-bold mb-2"
-            >
-              Nouveau Mot de Passe
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            />
-          </div>
-
           <div className="mb-6">
             <label
-              htmlFor="confirmPassword"
-              className="block text-gray-700 text-sm font-bold mb-2"
+              className="flex text-orange-300 w-72 items-center justify-end"
+              title="Mot de passe d'accès au compte"
             >
-              Confirmer le Mot de Passe
+              Mot de passe :
+              <input
+                className={`m-1 rounded-md text-black pl-1 w-45 !border-orange-200`}
+                name="password"
+                type={ShowPass ? "password" : "text"}
+                placeholder="Mot de passe"
+                required={true}
+                id="password"
+                onChange={(e) => setPassword(e.target.value)}
+                ref={PassInput}
+              />
+              <svg
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                onClick={() => {
+                  SetshowPass(false);
+                  PassInput.current?.focus();
+                }}
+                style={{ display: ShowPass ? "block" : "none" }}
+                className="mr-1 absolute text-gray-600"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                ></path>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                ></path>
+              </svg>
+              <svg
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                onClick={() => {
+                  SetshowPass(true);
+                  PassInput.current?.focus();
+                }}
+                style={{ display: ShowPass ? "none" : "block" }}
+                className="mr-1 absolute text-gray-600"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                ></path>
+              </svg>
             </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            />
+
+            <label
+              className="flex text-orange-400 w-72 items-center justify-end"
+              title="Veuillez retapper le mot de passe pour le confirmer"
+            >
+              Confirmer :
+              <input
+                className={`m-1 rounded-md text-black pl-1 w-45 !border-orange-200 ${SecondPassError ? "bg-red-500" : ""}`}
+                name="password2"
+                type={ShowPass2 ? "password" : "text"}
+                placeholder="Confirmer"
+                required={true}
+                id="confirmPassword"
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setSecondPassError(false);
+                }}
+                ref={PassInput2}
+              />
+              <svg
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                onClick={() => {
+                  SetshowPass2(false);
+                  PassInput2.current?.focus();
+                }}
+                style={{ display: ShowPass2 ? "block" : "none" }}
+                className="mr-1 absolute text-gray-600"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                ></path>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                ></path>
+              </svg>
+              <svg
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                onClick={() => {
+                  SetshowPass2(true);
+                  PassInput2.current?.focus();
+                }}
+                style={{ display: ShowPass2 ? "none" : "block" }}
+                className="mr-1 absolute text-gray-600"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                ></path>
+              </svg>
+            </label>
           </div>
 
           {error && <p className="text-red-500 text-sm italic mb-4">{error}</p>}

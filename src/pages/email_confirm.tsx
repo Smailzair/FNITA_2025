@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../api/supabaseClient";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import PgFooter from "../components/PgFooter";
 import { PgHeader } from "../components/PgHeader";
 
@@ -10,14 +10,13 @@ type Status = "loading" | "success" | "error";
 
 export default function EmailConfirm() {
   const navigate = useNavigate();
-  const searchParams = new URLSearchParams(window.location.search);
+  const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState("Vérification de votre compte...");
 
   // Use useEffect to run the verification logic once the component mounts
   useEffect(() => {
     // 1. Get query parameters from the URL
-
     // 1. On load, only EXTRACT and STORE the token data.
     const tokenHash = searchParams.get("token_hash");
     const type = searchParams.get("type");
@@ -52,7 +51,7 @@ export default function EmailConfirm() {
         setMessage("Une erreur inattendue est survenue.");
       }
     })();
-  }, []);
+  }, [searchParams]);
   // --- Render Functions ---
 
   const renderSuccess = () => (
