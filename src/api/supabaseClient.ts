@@ -44,11 +44,9 @@ export async function sendPasswordResetEmail(email: string) {
 
   // NOTE: We do not specify a redirectTo parameter here.
   // Supabase will use the link structure defined in your email template.
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/update_password`,
   });
-
-  console.log("Resert data --- > ", data);
 
   if (error) {
     console.error("Password reset request error:", error);

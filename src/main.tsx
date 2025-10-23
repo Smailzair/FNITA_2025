@@ -9,7 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Register from "./pages/Register";
 import EmailConfirm from "./pages/email_confirm";
 import UpdatePassword from "./pages/update_password";
-import ManageVets from "./pages/ManageVets";
+import ManageVets from "./pages/Admins/ManageVets";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -29,7 +29,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         />
         <Route path="*" element={<Login />} />
         <Route path="" element={<Welcome />} />
-        <Route path="/manage_vets" element={<ManageVets />} />
+        <Route path="/managevets" element={<ManageVets />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

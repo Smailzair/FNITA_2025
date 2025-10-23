@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase } from "../api/supabaseClient";
-import { PgHeader2 } from "../components/PgHeader2";
-import PgFooter from "../components/PgFooter";
+import { supabase } from "../../api/supabaseClient";
+import { PgHeader2 } from "../../components/PgHeader2";
+import PgFooter from "../../components/PgFooter";
 
 // Define the type for a veterinarian based on your tb_login table
 type Veterinarian = {
   id: string;
+  created_at: Date;
   fam_nme: string;
   nme: string;
   email: string;
@@ -16,6 +17,8 @@ type Veterinarian = {
 };
 
 type FilterStatus = "all" | "validated" | "not_validated";
+type SortDirection = "asc" | "desc";
+type SortableColumn = "created_at" | "fam_nme" | "email" | "wilaya" | "validated";
 
 export default function ManageVets() {
   const [vets, setVets] = useState<Veterinarian[]>([]);
@@ -23,6 +26,8 @@ export default function ManageVets() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [sortColumn, setSortColumn] = useState<SortableColumn>("created_at");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const fetchVets = useCallback(async () => {
     setLoading(true);
@@ -30,15 +35,20 @@ export default function ManageVets() {
     try {
       const { data, error: fetchError } = await supabase
         .from("tb_login")
-        .select("id, fam_nme, nme, email, phone, validated, wilaya, city")
+        .select("id, created_at, fam_nme, nme, email, phone, validated:confirmed, wilaya, city")
         .eq("type", "Vétérinaire");
 
       if (fetchError) {
         throw fetchError;
       }
 
-      setVets(data || []);
-    } catch (err: any) {
+      // Process data to convert created_at string to Date object
+      const processedData = (data || []).map(vet => ({
+        ...vet,
+        created_at: new Date(vet.created_at),
+      }));
+      setVets(processedData);
+    } catch (err: unknown) {
       setError("Impossible de charger les données des vétérinaires.");
       console.error("Error fetching veterinarians:", err);
     } finally {
@@ -54,7 +64,7 @@ export default function ManageVets() {
     try {
       const { error: updateError } = await supabase
         .from("tb_login")
-        .update({ validated: !currentStatus })
+        .update({ confirmed: !currentStatus })
         .eq("id", id);
 
       if (updateError) {
@@ -67,14 +77,14 @@ export default function ManageVets() {
           vet.id === id ? { ...vet, validated: !currentStatus } : vet
         )
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert("Erreur lors de la mise à jour du statut.");
       console.error("Error updating validation status:", err);
     }
   };
 
-  const filteredVets = useMemo(() => {
-    return vets
+  const processedVets = useMemo(() => {
+    const filtered = vets
       .filter((vet) => {
         if (filterStatus === "validated") return vet.validated;
         if (filterStatus === "not_validated") return !vet.validated;
@@ -82,12 +92,37 @@ export default function ManageVets() {
       })
       .filter(
         (vet) =>
-          `${vet.fam_nme} ${vet.nme}`
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
+          `${vet.fam_nme} ${vet.nme}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
           vet.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
-  }, [vets, searchTerm, filterStatus]);
+
+    return filtered.sort((a, b) => {
+      if (!sortColumn) return 0;
+
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+
+      const order = sortDirection === "asc" ? 1 : -1;
+
+      // Handle date sorting separately
+      if (aValue instanceof Date && bValue instanceof Date) {
+        return (aValue.getTime() - bValue.getTime()) * order;
+      }
+
+      if (String(aValue) < String(bValue)) return -1 * order;
+      if (String(aValue) > String(bValue)) return 1 * order;
+      return 0;
+    });
+  }, [vets, searchTerm, filterStatus, sortColumn, sortDirection]);
+
+  const handleSort = (column: SortableColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
 
   return (
     <div className="flex flex-col w-screen h-screen bg-gray-50">
@@ -103,18 +138,18 @@ export default function ManageVets() {
             <input
               type="text"
               placeholder="Rechercher par nom ou email..."
-              className="flex-grow p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
+              className="flex-grow text-black p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <select
-              className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
+              className="p-2 text-black border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
             >
               <option value="all">Tous</option>
-              <option value="validated">Validés</option>
-              <option value="not_validated">Non Validés</option>
+              <option value="validated" className="bg-green-100">Validés</option>
+              <option value="not_validated" className="bg-red-100">Non Validés</option>
             </select>
           </div>
 
@@ -125,16 +160,34 @@ export default function ManageVets() {
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Nom
+                      <button onClick={() => handleSort("created_at")} className="flex items-center gap-2">
+                        Date
+                        {sortColumn === "created_at" && (<span>{sortDirection === 'asc' ? '▲' : '▼'}</span>)}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email & Téléphone
+                      <button onClick={() => handleSort("fam_nme")} className="flex items-center gap-2">
+                        Nom
+                        {sortColumn === "fam_nme" && (<span>{sortDirection === 'asc' ? '▲' : '▼'}</span>)}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Localisation
+                      <button onClick={() => handleSort("email")} className="flex items-center gap-2">
+                        Email & Téléphone
+                        {sortColumn === "email" && (<span>{sortDirection === 'asc' ? '▲' : '▼'}</span>)}
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <button onClick={() => handleSort("wilaya")} className="flex items-center gap-2">
+                        Localisation
+                        {sortColumn === "wilaya" && (<span>{sortDirection === 'asc' ? '▲' : '▼'}</span>)}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Statut
+                      <button onClick={() => handleSort("validated")} className="flex items-center gap-2 mx-auto">
+                        Statut
+                        {sortColumn === "validated" && (<span>{sortDirection === 'asc' ? '▲' : '▼'}</span>)}
+                      </button>
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Valider
@@ -159,7 +212,7 @@ export default function ManageVets() {
                       </td>
                     </tr>
                   )}
-                  {!loading && !error && filteredVets.length === 0 && (
+                  {!loading && !error && processedVets.length === 0 && (
                     <tr>
                       <td
                         colSpan={5}
@@ -171,8 +224,13 @@ export default function ManageVets() {
                   )}
                   {!loading &&
                     !error &&
-                    filteredVets.map((vet) => (
+                    processedVets.map((vet) => (
                       <tr key={vet.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {vet.created_at.toLocaleDateString('fr-FR')}
+                          </div>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
                             {vet.fam_nme} {vet.nme}
@@ -191,11 +249,10 @@ export default function ManageVets() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              vet.validated
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${vet.validated
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                              }`}
                           >
                             {vet.validated ? "Validé" : "Non validé"}
                           </span>
@@ -217,9 +274,8 @@ export default function ManageVets() {
                               />
                               <div className="block bg-gray-600 w-14 h-8 rounded-full"></div>
                               <div
-                                className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${
-                                  vet.validated ? "translate-x-6" : ""
-                                }`}
+                                className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${vet.validated ? "translate-x-6" : ""
+                                  }`}
                               ></div>
                             </div>
                           </label>
