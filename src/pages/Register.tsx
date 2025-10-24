@@ -206,7 +206,7 @@ export default function Register() {
             <div className="text-gray-400"> | </div>
             <div
               className="flex flex-col items-center"
-              onClick={() => setSelectedRadio("Propriétaire")}
+              onClick={() => setSelectedRadio("Administrateur")}
               title="Ministre et administrateur du site"
             >
               <svg

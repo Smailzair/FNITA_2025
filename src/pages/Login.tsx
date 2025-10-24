@@ -43,10 +43,11 @@ export default function Login() {
     }
     //---------------------------------------------
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: EmailInput.current.value,
-      password: PassInput.current ? PassInput.current.value : "",
-    });
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
+        email: EmailInput.current.value,
+        password: PassInput.current ? PassInput.current.value : "",
+      });
     if (signInError) {
       if (signInError.message === "Email not confirmed") {
         setError("email-not-confirmed");
@@ -56,7 +57,54 @@ export default function Login() {
         PassInput.current?.focus();
         PassInput.current?.select();
       }
-    } else navigate("/dashboard");
+    } else {
+      const userType = signInData.user.user_metadata.type;
+      console.log("User data:", userType);
+
+      if (!userType) {
+        // Fallback: if type is not in metadata, query the database
+        const { data: profile, error: profileError } = await supabase
+          .from("tb_login")
+          .select("type")
+          .eq("id", signInData.user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+          navigate("/dashboard"); // Fallback to a generic dashboard
+        } else if (profile) {
+          switch (profile.type) {
+            case "Administrateur":
+              navigate("/admindashboard");
+              break;
+            case "Ayant droit":
+              navigate("/aydroitdashboard");
+              break;
+            case "Vétérinaire":
+              navigate("/vetsdashboard");
+              break;
+            default:
+              navigate("/dashboard");
+          }
+        }
+        return;
+      }
+
+      switch (signInData.user.user_metadata.type) {
+        case "Administrateur":
+          navigate("/admindashboard");
+          break;
+        case "Ayant droit":
+          navigate("/aydroitdashboard");
+          break;
+        case "Vétérinaire":
+          navigate("/vetsdashboard");
+          break;
+        default:
+          navigate("/dashboard");
+      }
+    }
+
     setLoading(false);
   };
 
