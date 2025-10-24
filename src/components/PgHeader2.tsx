@@ -55,7 +55,7 @@ export const PgHeader2 = () => {
                 Fichier National d&apos;Identification et Traçabilité Animale
               </p>
             </div>
-            <div className="absolute inset-y-0 right-0 flex flex-col items-center pr-2 max-xs:hidden min-w-fit text-xs w-fit h-full justify-center">
+            <div className="inset-y-0 right-0 flex flex-col items-center pr-2 max-xs:hidden min-w-fit text-xs w-fit h-full justify-center">
               <label className="text-green-200 text-center">Bienvenue</label>
               <label className="text-slate-200 text-center">
                 Mr. {user_full_name}

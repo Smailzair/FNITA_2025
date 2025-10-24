@@ -1,3 +1,4 @@
+import PgFooter from "../components/PgFooter";
 import { PgHeader2 } from "../components/PgHeader2";
 
 export default function Dashboard() {
@@ -8,6 +9,7 @@ export default function Dashboard() {
         <h2>Bienvenue !</h2>
         <p>(en train de developper)</p>
       </div>
+      <PgFooter />
     </div>
   );
 }
