@@ -49,8 +49,8 @@ export default function Register() {
     function handleResize() {
       setIsSmallScreen(
         (window.innerHeight <= 455 && window.innerWidth > 490) ||
-          (window.innerHeight <= 600 && window.innerWidth <= 500) ||
-          (window.innerHeight <= 600 && window.innerWidth <= 338)
+        (window.innerHeight <= 600 && window.innerWidth <= 500) ||
+        (window.innerHeight <= 600 && window.innerWidth <= 338)
       );
     }
 
@@ -233,7 +233,7 @@ export default function Register() {
                 <input
                   type="radio"
                   value="Ayant-Droit"
-                  checked={selectedRadio === "Propriétaire"}
+                  checked={selectedRadio === "Administrateur"}
                   readOnly={true}
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
@@ -277,16 +277,14 @@ export default function Register() {
               />
             </label>
             <label
-              className={`flex ${
-                selectedRadio === "Vétérinaire" ? "text-orange-200" : ""
-              } w-72 items-center justify-end`}
+              className={`flex ${selectedRadio === "Vétérinaire" ? "text-orange-200" : ""
+                } w-72 items-center justify-end`}
               title="Numéro de téléphone"
             >
               N° Tél :
               <input
-                className={`m-1 rounded-md text-black pl-1 w-45  ${
-                  selectedRadio === "Vétérinaire" ? "!border-orange-200" : ""
-                }`}
+                className={`m-1 rounded-md text-black pl-1 w-45  ${selectedRadio === "Vétérinaire" ? "!border-orange-200" : ""
+                  }`}
                 id="phone"
                 name="telNum"
                 type="tel"

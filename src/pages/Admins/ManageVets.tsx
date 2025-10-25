@@ -155,11 +155,10 @@ export default function ManageVets() {
         cellStyle: { textAlign: "center" },
         render: (vet) => (
           <span
-            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-              vet.validated
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
+            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${vet.validated
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+              }`}
           >
             {vet.validated ? "Validé" : "Non validé"}
           </span>
@@ -228,8 +227,8 @@ export default function ManageVets() {
             emptyStateMessage="Aucun vétérinaire trouvé."
             initialSortColumn="created_at"
           />
+          <div className="border-t-3 border-gray-400 w-[80%] m-auto mt-4" />
         </div>
-        <div className="border-t-3 border-gray-400 w-[80%] m-auto mt-4" />
       </main>
       <PgFooter />
     </div>
@@ -257,9 +256,8 @@ const ValidationToggle = ({
       />
       <div className="block bg-gray-600 w-14 h-8 rounded-full"></div>
       <div
-        className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${
-          vet.validated ? "translate-x-6" : ""
-        }`}
+        className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${vet.validated ? "translate-x-6" : ""
+          }`}
       ></div>
     </div>
   </label>

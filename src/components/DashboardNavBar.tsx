@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { UserRole } from "../main";
 
 // --- Icon Components ---
@@ -55,7 +55,7 @@ const MenuIcon = () => (
 
 const adminLinks = [
   { to: "/admindashboard", title: "Tableau de Bord", icon: <HomeIcon /> },
-  { to: "/managevets", title: "Gérer Vétérinaires", icon: <UsersIcon /> },
+  { to: "/managevets", title: "Gestion des Utilisateurs", icon: <UsersIcon /> },
   { to: "/stats", title: "Statistiques", icon: <StatsIcon /> },
 ];
 
@@ -105,10 +105,9 @@ export default function DashboardNavBar({ role }: DashboardNavBarProps) {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-          isActive
-            ? "bg-cyan-700 text-white"
-            : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+        `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
+          ? "bg-cyan-700 text-white"
+          : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
         }`
       }
       onClick={() => setIsMenuOpen(false)}
