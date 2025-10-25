@@ -93,7 +93,6 @@ export default function Register() {
       options: {
         emailRedirectTo: `${window.location.origin}/Login`,
         data: {
-          pass: formData.password, // <--- doublé pour passer au tb_login
           fam_nme: formData.famName,
           nme: formData.name,
           phone: formData.telNum,
@@ -181,7 +180,7 @@ export default function Register() {
             <div
               className="flex flex-col items-center"
               onClick={() => setSelectedRadio("Ayant-Droit")}
-              title="Personne autorisée par le ministre et les administrateurs (Police, Gendarmerie etc...)"
+              title="Personne autorisée par le ministère et les administrateurs (Police, Gendarmerie etc...)"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -195,12 +194,12 @@ export default function Register() {
               <label className="flex items-center">
                 <input
                   type="radio"
-                  value="Ayant-Droit"
-                  checked={selectedRadio === "Ayant-Droit"}
+                  value="Ayant droit"
+                  checked={selectedRadio === "Ayant droit"}
                   readOnly={true}
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
-                Ayant-Droit
+                Ayant droit
               </label>
             </div>
             <div className="text-gray-400"> | </div>
@@ -232,7 +231,7 @@ export default function Register() {
               <label className="flex items-center">
                 <input
                   type="radio"
-                  value="Ayant-Droit"
+                  value="Administrateur"
                   checked={selectedRadio === "Administrateur"}
                   readOnly={true}
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"

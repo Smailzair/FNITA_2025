@@ -96,26 +96,6 @@ const UpdatePasswordPage: React.FC = () => {
       );
       setLoading(false);
     } else {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      // 2. Check if a user is authenticated
-      if (!user) {
-        // Handle the case where there is no active session (user is logged out)
-        console.error("No authenticated user found.");
-        return; // Stop the update process
-      }
-
-      // 3. Now you have the user.id, you can proceed with the update
-      const { error } = await supabase
-        .from("tb_login")
-        .update({ pass: password })
-        .eq("id", user.id);
-      if (error) {
-        console.log("Password updated successfully:", error);
-      }
-      //-------------------
       setLoading(false);
       //-------------
       setMessage("Mot de passe mis à jour avec succès ! Redirection...");

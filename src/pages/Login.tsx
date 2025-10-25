@@ -1,21 +1,22 @@
-import { useRef, useState } from "react";
-import {
-  emailExists,
-  sendPasswordResetEmail,
-  supabase,
-} from "../api/supabaseClient";
+import { useState, type FormEvent } from "react";
+import { sendPasswordResetEmail, supabase } from "../api/supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
 import { PgHeader } from "../components/PgHeader";
 import PgFooter from "../components/PgFooter";
 
+type LoginError =
+  | "wrong-password"
+  | "email-not-found"
+  | "email-not-confirmed"
+  | null;
+
 export default function Login() {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<
-    "wrong-password" | "email-not-found" | "email-not-confirmed" | null
-  >(null);
-
-  const EmailInput = useRef<HTMLInputElement>(null);
-  const PassInput = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<LoginError>(null);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
 
   const [resetSent, setResetSent] = useState(false);
   const [resetErrMsg, setResetErrMsg] = useState("");
@@ -29,83 +30,91 @@ export default function Login() {
     setResetErrMsg("");
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    clearErrors();
+  };
+
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
-    if (!EmailInput.current || EmailInput.current?.value === "") return;
     setLoading(true);
-    //-------- Check if the email exists in the database
-    const emailAdressExists = await emailExists(EmailInput.current.value);
-    if (!emailAdressExists) {
+    clearErrors();
+
+    // First, check if the email exists in the public profile table.
+    const { data: existingUser, error: fetchError } = await supabase
+      .from("tb_login")
+      .select("id")
+      .eq("email", formData.email)
+      .single();
+
+    // If no user is found with that email, set an error and stop.
+    if (fetchError || !existingUser) {
       setError("email-not-found");
-      EmailInput.current?.focus();
       setLoading(false);
       return;
     }
-    //---------------------------------------------
 
+    // If the email exists, proceed with the sign-in attempt.
     const { data: signInData, error: signInError } =
       await supabase.auth.signInWithPassword({
-        email: EmailInput.current.value,
-        password: PassInput.current ? PassInput.current.value : "",
+        email: formData.email,
+        password: formData.password,
       });
+
     if (signInError) {
+      console.error("Sign-in error:", signInError);
       if (signInError.message === "Email not confirmed") {
         setError("email-not-confirmed");
-        EmailInput.current?.focus();
       } else if (signInError.message === "Invalid login credentials") {
+        // Since we've confirmed the email exists, this error must mean the password is wrong.
         setError("wrong-password");
-        PassInput.current?.focus();
-        PassInput.current?.select();
       }
     } else {
-      const userType = signInData.user.user_metadata.type;
-      console.log("User data:", userType);
+      // ALWAYS check the database for the `validated` status.
+      const { data: profile, error: profileError } = await supabase
+        .from("tb_login")
+        .select("type, validated, fam_nme, nme, email")
+        .eq("id", signInData.user.id)
+        .single();
 
-      if (!userType) {
-        // Fallback: if type is not in metadata, query the database
-        const { data: profile, error: profileError } = await supabase
-          .from("tb_login")
-          .select("type")
-          .eq("id", signInData.user.id)
-          .single();
-
-        if (profileError) {
-          console.error("Error fetching user profile:", profileError);
-          navigate("/dashboard"); // Fallback to a generic dashboard
-        } else if (profile) {
-          switch (profile.type) {
-            case "Administrateur":
-              navigate("/admindashboard");
-              break;
-            case "Ayant droit":
-              navigate("/aydroitdashboard");
-              break;
-            case "Vétérinaire":
-              navigate("/vetsdashboard");
-              break;
-            default:
-              navigate("/dashboard");
-          }
-        }
+      if (profileError) {
+        console.error("Error fetching user profile:", profileError);
+        // Allow login but redirect to a generic dashboard as a fallback.
+        navigate("/dashboard");
         return;
       }
 
-      switch (signInData.user.user_metadata.type) {
-        case "Administrateur":
-          navigate("/admindashboard");
-          break;
-        case "Ayant droit":
-          navigate("/aydroitdashboard");
-          break;
-        case "Vétérinaire":
-          navigate("/vetsdashboard");
-          break;
-        default:
-          navigate("/dashboard");
+      if (profile) {
+        // CRITICAL: Check if the admin has validated the account.
+        if (!profile.validated) {
+          // Sign out the user to clear the session before redirecting
+          await supabase.auth.signOut();
+          navigate("/notvalidatedyet", {
+            state: {
+              fam_nme: profile.fam_nme,
+              nme: profile.nme,
+              email: profile.email,
+            },
+          });
+          setLoading(false);
+          return; // Stop execution here
+        }
+
+        // User is validated, proceed with role-based redirection.
+        redirectToDashboard(profile.type);
       }
     }
 
     setLoading(false);
+  };
+
+  const redirectToDashboard = (role: string) => {
+    const roleDashboardMap: Record<string, string> = {
+      Administrateur: "/admindashboard",
+      "Ayant droit": "/aydroitdashboard",
+      Vétérinaire: "/vetsdashboard",
+    };
+    navigate(roleDashboardMap[role] || "/dashboard");
   };
 
   return (
@@ -124,30 +133,30 @@ export default function Login() {
             <li>
               <span>Email : </span>
               <input
-                className={`m-1 rounded-md text-black pl-1 ${
-                  error === "email-not-found" || error === "email-not-confirmed"
-                    ? "bg-orange-400"
-                    : "bg-gray-300"
-                }`}
+                className={`m-1 rounded-md text-black pl-1 ${error === "email-not-confirmed" ? "bg-orange-400" : "bg-gray-300"
+                  }`}
                 type="email"
+                name="email"
                 placeholder="Email"
                 required={true}
-                ref={EmailInput}
-                onChange={clearErrors}
+                value={formData.email}
+                onChange={handleFormChange}
+                autoComplete="email"
               />
             </li>
 
             <li className="flex flex-row justify-end">
               <span>Mot de passe : </span>
               <input
-                ref={PassInput}
-                className={`m-1 rounded-md text-black pl-1 ${
-                  error === "wrong-password" ? "bg-red-400" : "bg-gray-300"
-                }`}
+                className={`m-1 rounded-md text-black pl-1 ${error === "wrong-password" ? "bg-red-400" : "bg-gray-300"
+                  }`}
                 type={ShowPass ? "text" : "password"}
+                name="password"
                 placeholder="Mot de passe"
                 required={true}
-                onChange={clearErrors}
+                value={formData.password}
+                onChange={handleFormChange}
+                autoComplete="current-password"
               />
               <svg
                 fill="none"
@@ -159,12 +168,10 @@ export default function Login() {
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
                 onClick={() => {
-                  SetshowPass(true);
-                  PassInput.current?.focus();
+                  SetshowPass(!ShowPass);
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${
-                  ShowPass ? "hidden" : ""
-                }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${ShowPass ? "hidden" : ""
+                  }`}
               >
                 <path
                   strokeLinecap="round"
@@ -187,12 +194,10 @@ export default function Login() {
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
                 onClick={() => {
-                  SetshowPass(false);
-                  PassInput.current?.focus();
+                  SetshowPass(!ShowPass);
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${
-                  !ShowPass ? "hidden" : ""
-                }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${!ShowPass ? "hidden" : ""
+                  }`}
               >
                 <path
                   strokeLinecap="round"
@@ -207,11 +212,8 @@ export default function Login() {
             <div className="flew flex-col">
               {error === "email-not-found" && (
                 <Link
-                  to={`/Register${
-                    EmailInput.current
-                      ? "?email=" + EmailInput.current.value
-                      : ""
-                  }`}
+                  to={`/Register${formData.email ? "?email=" + formData.email : ""
+                    }`}
                   className="text-yellow-400 text-center text-xs flex font-semibold mr-4"
                 >
                   Email non enregistré
@@ -224,7 +226,7 @@ export default function Login() {
                   className="text-red-400 text-center text-xs flex font-semibold mr-10 bg-transparent hover:bg-transparent border-none hover:text-red-600"
                   onClick={async () => {
                     const { success, message } = await sendPasswordResetEmail(
-                      EmailInput.current?.value || ""
+                      formData.email
                     );
                     setResetSent(success);
                     if (!success) setResetErrMsg(message);

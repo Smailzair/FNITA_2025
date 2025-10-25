@@ -14,6 +14,7 @@ import AdminDashboard from "./pages/Admins/AdminDashboard";
 import ProtectedRoute from "./ProtectedRoute";
 import VetsDashboard from "./pages/Vets/VetsDashboard";
 import AyDroitDashboard from "./pages/AyDroit/AyDroitDashboard";
+import NotValidatedYet from "./pages/NotValidatedYet";
 
 // Define UserRole enum to avoid magic strings
 export const UserRole = {
@@ -31,6 +32,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/email_confirm" element={<EmailConfirm />} />
+        <Route path="/notvalidatedyet" element={<NotValidatedYet />} />
         <Route path="/update_password" element={<UpdatePassword />} />
 
         {/* Protected Routes */}

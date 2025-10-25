@@ -13,6 +13,7 @@ export default function EmailConfirm() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState("Vérification de votre compte...");
+  const [userType, setUserType] = useState<string | null>(null);
 
   // Use useEffect to run the verification logic once the component mounts
   useEffect(() => {
@@ -44,6 +45,7 @@ export default function EmailConfirm() {
         );
         console.error("Confirmation Error:", error);
       } else if (data && typeof data === "object" && "user" in data) {
+        setUserType(data.user?.user_metadata.type);
         setStatus("success");
         setMessage(`Votre compte est maintenant confirmé !`);
       } else {
@@ -77,7 +79,21 @@ export default function EmailConfirm() {
       </h1>
 
       <button
-        onClick={() => navigate("/dashboard")}
+        onClick={() => {
+          switch (userType) {
+            case "vets":
+              navigate("/vetsdashboard");
+              break;
+            case "aydroit":
+              navigate("/aydroitdashboard");
+              break;
+            case "admin":
+              navigate("/admindashboard");
+              break;
+            default:
+              navigate("/dashboard");
+          }
+        }}
         className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-150"
       >
         Accéder au tableau de bord

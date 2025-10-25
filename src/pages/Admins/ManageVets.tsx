@@ -14,6 +14,7 @@ type Veterinarian = {
   email: string;
   phone: string;
   validated: boolean;
+  confirmed: boolean;
   wilaya: string;
   city: string;
 };
@@ -34,7 +35,7 @@ export default function ManageVets() {
       const { data, error: fetchError } = await supabase
         .from("tb_login")
         .select(
-          "id, created_at, fam_nme, nme, email, phone, validated:confirmed, wilaya, city"
+          "id, created_at, fam_nme, nme, email, phone, validated,confirmed, wilaya, city"
         )
         .eq("type", "Vétérinaire");
 
@@ -65,7 +66,7 @@ export default function ManageVets() {
       try {
         const { error: updateError } = await supabase
           .from("tb_login")
-          .update({ confirmed: !currentStatus })
+          .update({ validated: !currentStatus })
           .eq("id", id);
 
         if (updateError) {
