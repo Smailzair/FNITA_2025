@@ -13,7 +13,6 @@ export default function EmailConfirm() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState("Vérification de votre compte...");
-  const [userType, setUserType] = useState<string | null>(null);
 
   // Use useEffect to run the verification logic once the component mounts
   useEffect(() => {
@@ -45,7 +44,6 @@ export default function EmailConfirm() {
         );
         console.error("Confirmation Error:", error);
       } else if (data && typeof data === "object" && "user" in data) {
-        setUserType(data.user?.user_metadata.type);
         setStatus("success");
         setMessage(`Votre compte est maintenant confirmé !`);
       } else {
@@ -75,28 +73,19 @@ export default function EmailConfirm() {
         />
       </svg>
       <h1 className="text-xl text-lime-500 text-center items-center w-fit mb-8">
-        Inscription bien confirmée!
+        Email bien confirmée!
       </h1>
-
+      <p className="text-gray-700 mb-6">
+        Votre inscription est maintenant confirmé. En attente de validation de
+        l'administrateur.
+      </p>
       <button
         onClick={() => {
-          switch (userType) {
-            case "vets":
-              navigate("/vetsdashboard");
-              break;
-            case "aydroit":
-              navigate("/aydroitdashboard");
-              break;
-            case "admin":
-              navigate("/admindashboard");
-              break;
-            default:
-              navigate("/dashboard");
-          }
+          navigate("/");
         }}
         className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-150"
       >
-        Accéder au tableau de bord
+        Acceuil
       </button>
     </div>
   );
@@ -127,10 +116,10 @@ export default function EmailConfirm() {
       </h1>
       <p className="text-gray-700 mb-6">{message}</p>
       <button
-        onClick={() => navigate("/dashboard")}
+        onClick={() => navigate("/")}
         className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded transition duration-150"
       >
-        Aller à la page de connexion
+        Aller à la page d'accueil
       </button>
     </div>
   );

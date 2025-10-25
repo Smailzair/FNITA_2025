@@ -80,7 +80,7 @@ export default function Login() {
       if (profileError) {
         console.error("Error fetching user profile:", profileError);
         // Allow login but redirect to a generic dashboard as a fallback.
-        navigate("/dashboard");
+        navigate("/");
         return;
       }
 
@@ -133,8 +133,11 @@ export default function Login() {
             <li>
               <span>Email : </span>
               <input
-                className={`m-1 rounded-md text-black pl-1 ${error === "email-not-confirmed" ? "bg-orange-400" : "bg-gray-300"
-                  }`}
+                className={`m-1 rounded-md text-black pl-1 ${
+                  error === "email-not-confirmed"
+                    ? "bg-orange-400"
+                    : "bg-gray-300"
+                }`}
                 type="email"
                 name="email"
                 placeholder="Email"
@@ -148,8 +151,9 @@ export default function Login() {
             <li className="flex flex-row justify-end">
               <span>Mot de passe : </span>
               <input
-                className={`m-1 rounded-md text-black pl-1 ${error === "wrong-password" ? "bg-red-400" : "bg-gray-300"
-                  }`}
+                className={`m-1 rounded-md text-black pl-1 ${
+                  error === "wrong-password" ? "bg-red-400" : "bg-gray-300"
+                }`}
                 type={ShowPass ? "text" : "password"}
                 name="password"
                 placeholder="Mot de passe"
@@ -170,8 +174,9 @@ export default function Login() {
                 onClick={() => {
                   SetshowPass(!ShowPass);
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${ShowPass ? "hidden" : ""
-                  }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${
+                  ShowPass ? "hidden" : ""
+                }`}
               >
                 <path
                   strokeLinecap="round"
@@ -196,8 +201,9 @@ export default function Login() {
                 onClick={() => {
                   SetshowPass(!ShowPass);
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${!ShowPass ? "hidden" : ""
-                  }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${
+                  !ShowPass ? "hidden" : ""
+                }`}
               >
                 <path
                   strokeLinecap="round"
@@ -212,8 +218,9 @@ export default function Login() {
             <div className="flew flex-col">
               {error === "email-not-found" && (
                 <Link
-                  to={`/Register${formData.email ? "?email=" + formData.email : ""
-                    }`}
+                  to={`/Register${
+                    formData.email ? "?email=" + formData.email : ""
+                  }`}
                   className="text-yellow-400 text-center text-xs flex font-semibold mr-4"
                 >
                   Email non enregistré

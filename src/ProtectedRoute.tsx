@@ -29,7 +29,7 @@ export default function ProtectedRoute({
 
   if (allowedRoles && (!role || !allowedRoles.includes(role))) {
     // User does not have the required role, redirect to a "not authorized" page or dashboard
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return children;

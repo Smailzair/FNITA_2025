@@ -99,7 +99,7 @@ const UpdatePasswordPage: React.FC = () => {
       setLoading(false);
       //-------------
       setMessage("Mot de passe mis à jour avec succès ! Redirection...");
-      setTimeout(() => navigate("/dashboard"), 2500);
+      setTimeout(() => navigate("/login"), 2500);
     }
   };
 
