@@ -2,41 +2,54 @@ import { useEffect, useState, type FormEvent } from "react";
 import PgFooter from "../components/PgFooter";
 import { PgHeader2 } from "../components/PgHeader2";
 import WilayaComboBox from "../components/WilayaComboBox";
-import { supabase } from "../api/supabaseClient";
+import { sendPasswordResetEmail, supabase } from "../api/supabaseClient";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 export default function UserInfosUpdate() {
   const [loading, setLoading] = useState(true);
-  const [authLoading, setAuthLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
   const { user, role } = useAuth();
   const { userId } = useParams<{ userId?: string }>();
 
   const [formData, setFormData] = useState({
-    famName: "",
-    name: "",
+    // famName: "",
+    // name: "",
+    // email: "",
+    // telNum: "",
+    // address: "",
+    // city: "",
+    // cni: "",
+    // anv: "",
+    // wilaya: "",
+    // type: "",
+    // asking_to_delete: false,
+    fam_nme: "",
+    nme: "",
     email: "",
-    password: "",
-    password2: "",
-    telNum: "",
-    address: "",
+    phone: "",
+    adresse: "",
     city: "",
-    cni: "",
-    anv: "",
+    num_cni: "",
+    num_anv: "",
     wilaya: "",
     type: "",
     asking_to_delete: false,
   });
 
   const [originalEmail, setOriginalEmail] = useState("");
-  const [ShowPass, SetshowPass] = useState(true);
-  const [ShowPass2, SetshowPass2] = useState(true);
+  const [originalType, setOriginalType] = useState("");
+  const [isEmailEditing, setIsEmailEditing] = useState(false);
+  const [isEmailChangePending, setIsEmailChangePending] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [ActDelMsg, setActDelMsg] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [authMessage, setAuthMessage] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+
+  const [passwordResetState, setPasswordResetState] = useState<{ status: 'idle' | 'loading' | 'sent' | 'error', message: string }>({ status: 'idle', message: '' });
 
   const navigate = useNavigate();
 
@@ -46,6 +59,11 @@ export default function UserInfosUpdate() {
       if (!userId && !user) {
         // The effect will re-run when `user` is populated by useAuth.
         return;
+      }
+
+      if (user?.new_email) {
+        setIsEmailChangePending(true);
+        setPendingEmail(user.new_email);
       }
 
       const targetUserId = userId || user?.id;
@@ -68,8 +86,9 @@ export default function UserInfosUpdate() {
       }
 
       if (data) {
-        setFormData({ ...data, password: "", password2: "" });
+        setFormData({ ...data });
         setOriginalEmail(data.email);
+        setOriginalType(data.type);
       }
       setLoading(false);
     };
@@ -81,8 +100,8 @@ export default function UserInfosUpdate() {
     function handleResize() {
       setIsSmallScreen(
         (window.innerHeight <= 455 && window.innerWidth > 490) ||
-          (window.innerHeight <= 600 && window.innerWidth <= 500) ||
-          (window.innerHeight <= 600 && window.innerWidth <= 338)
+        (window.innerHeight <= 600 && window.innerWidth <= 500) ||
+        (window.innerHeight <= 600 && window.innerWidth <= 338)
       );
     }
 
@@ -98,6 +117,7 @@ export default function UserInfosUpdate() {
   ): Promise<void> {
     event.preventDefault();
     setMessage("");
+    setActDelMsg("");
     setError("");
     setLoading(true);
 
@@ -128,103 +148,128 @@ export default function UserInfosUpdate() {
       }
     }
 
+    const profileUpdates: Partial<typeof formData> = { ...formData, email: originalEmail };
+    delete profileUpdates.email; // Email is handled separately
+
     // Update profile data in tb_login
-    const { password, password2, email, ...profileData } = formData;
-    const { error: profileError } = await supabase
+    const { error } = await supabase
       .from("tb_login")
-      .update(profileData)
+      .update(profileUpdates)
       .eq("id", targetUserId);
 
-    if (profileError) {
-      setError(`Erreur de mise à jour du profil: ${profileError.message}`);
+    if (error) {
+      setError(`Erreur de mise à jour du profil: ${error.message}`);
       setLoading(false);
       return;
     }
 
-    setMessage("✅ Informations du profil mises à jour avec succès.");
+    setMessage("✅ Informations du profil mises à jour.");
     setLoading(false);
   }
 
-  async function handleAuthUpdate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setAuthMessage("");
+  async function handleEmailUpdate() {
+    if (formData.email === originalEmail) {
+      setError("L'adresse e-mail n'a pas changé.");
+      return;
+    }
+
+    // --- Validation Checks ---
+    if (!formData.email.trim()) {
+      setError("L'adresse e-mail ne peut pas être vide.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Veuillez saisir une adresse e-mail valide.");
+      return;
+    }
+    // --- End Validation ---
+
+
+    setEmailLoading(true);
     setError("");
-    setAuthLoading(true);
+    setEmailMessage("");
+    setMessage("");
+    setActDelMsg("");
 
     const targetUserId = userId || user?.id;
     if (!targetUserId) {
       setError("Utilisateur non identifiable pour la mise à jour.");
-      setAuthLoading(false);
+      setEmailLoading(false);
       return;
     }
 
-    const authUpdates: { email?: string; password?: string } = {};
-    if (formData.email !== originalEmail) {
-      authUpdates.email = formData.email;
-    }
+    // 0. Check if the new email already exists for another user
+    const { data: existingUser, error: existingUserError } = await supabase
+      .from("tb_login")
+      .select("id")
+      .eq("email", formData.email)
+      .not("id", "eq", targetUserId) // Exclude the current user
+      .single();
 
-    if (formData.password) {
-      if (formData.password.length < 6) {
-        setPasswordError("bg-red-400");
-        setError("Le mot de passe doit contenir au moins 6 caractères.");
-        setAuthLoading(false);
-        return;
-      }
-      if (formData.password !== formData.password2) {
-        setPasswordError("bg-red-400");
-        setError("Les mots de passe ne correspondent pas.");
-        setAuthLoading(false);
-        return;
-      }
-      authUpdates.password = formData.password;
+    if (existingUser) {
+      setError("Cette adresse e-mail est déjà utilisée par un autre compte.");
+      setEmailLoading(false);
+      return;
     }
-
-    if (Object.keys(authUpdates).length === 0) {
-      setError("Aucun changement d'email ou de mot de passe à enregistrer.");
-      setAuthLoading(false);
+    if (existingUserError && existingUserError.code !== 'PGRST116') { // PGRST116 = no rows found, which is good
+      setError(`Erreur lors de la vérification de l'e-mail: ${existingUserError.message}`);
+      setEmailLoading(false);
       return;
     }
 
-    // 1. Update auth data (email/password)
-    const { error: authError } = await supabase.auth.updateUser(authUpdates);
+    // 1. Update the email in Supabase Auth. This triggers the confirmation email.
+    const { error: authError } = await supabase.auth.updateUser({
+      email: formData.email,
+    });
+
     if (authError) {
-      setError(
-        `Erreur de mise à jour d'authentification: ${authError.message}`
-      );
-      setAuthLoading(false);
+      setError(`Erreur de mise à jour d'email: ${authError.message}`);
+      setEmailLoading(false);
       return;
     }
 
-    // 2. If email was changed, update it in tb_login as well
-    if (authUpdates.email) {
-      const { error: profileError } = await supabase
-        .from("tb_login")
-        .update({ email: authUpdates.email })
-        .eq("id", targetUserId);
+    // NOTE: We no longer update the email in `tb_login` here.
+    // It will be updated by a database trigger once the user confirms the change in `auth.users`.
 
-      if (profileError) {
-        setError(
-          `Erreur de mise à jour de l'email dans le profil: ${profileError.message}`
-        );
-        setAuthLoading(false);
-        return;
-      }
-    }
+    setEmailLoading(false);
+    setEmailMessage("Veuillez consulter votre nouvelle boîte de réception pour confirmer le changement d'adresse e-mail. Vous serez déconnecté.");
+    setIsEmailEditing(false); // Disable editing and show "Modifier" again
+    setIsEmailChangePending(true);
+    setPendingEmail(formData.email);
 
-    let successMessage = "✅ Informations de sécurité mises à jour.";
-    if (authUpdates.email) {
-      successMessage += "\n Veuillez confirmer votre nouvelle adresse e-mail.";
-    }
-    setAuthMessage(successMessage);
+    // Log out the user to complete the flow, as they need to re-login after confirmation.
+    setTimeout(async () => {
+      await supabase.auth.signOut();
+      navigate("/login");
+    }, 4000);
+  }
 
-    // 3. Logout if user updated their own sensitive info
-    if (targetUserId === user?.id) {
-      setTimeout(async () => {
-        await supabase.auth.signOut();
-        navigate("/login");
-      }, 3000);
+  async function handleCancelEmailChange() {
+    setEmailLoading(true);
+    setError("");
+    setEmailMessage("");
+
+    // Call the custom RPC function to cancel the email change in auth.users
+    const { error } = await supabase.rpc('cancel_email_change');
+
+    setEmailLoading(false);
+
+    if (error) {
+      setError(`Erreur lors de l'annulation: ${error.message}. Veuillez rafraîchir la page.`);
     } else {
-      setAuthLoading(false);
+      // Force a session refresh to get the updated user object without the pending email change.
+      // This will trigger onAuthStateChange and update the `user` from the useAuth hook.
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        setError("Le changement a été annulé, mais la session n'a pas pu être rafraîchie. Veuillez rafraîchir la page.");
+      } else {
+        // The UI will now update automatically via the useEffect hook listening to the `user` object.
+        // We can still reset local state for immediate feedback.
+        setIsEmailEditing(false);
+        setEmailMessage("Le changement d'e-mail a été annulé.");
+      }
     }
   }
 
@@ -238,13 +283,13 @@ export default function UserInfosUpdate() {
     setLoading(false);
     if (error) setError(error.message);
     else
-      setMessage(
+      setActDelMsg(
         `Demande de suppression de compte ${status ? "envoyée" : "annulée"}.`
       );
     setFormData((p) => ({ ...p, asking_to_delete: status }));
   }
 
-  function handleFormChange(e: React.FormEvent<HTMLFormElement>) {
+  function handleFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const target = e.target as HTMLInputElement | HTMLTextAreaElement;
     const { name, value } = target;
 
@@ -253,31 +298,69 @@ export default function UserInfosUpdate() {
       [name]: value, // Use the name attribute to update the correct state field
     }));
 
-    if (name === "password" || name === "password2") {
-      setPasswordError("");
-    }
-
     setError("");
     setMessage("");
-    setAuthMessage("");
+    setActDelMsg("");
+    setEmailMessage("");
+    setPasswordResetState({ status: 'idle', message: '' });
   }
 
+  const handleEnableEmailEdit = () => {
+    if (window.confirm("Pour changer votre e-mail, vous devrez le confirmer via un message qui vous sera envoyé. Continuer ?")) {
+      setIsEmailEditing(true);
+    }
+  }
+
+  const handlePasswordReset = async () => {
+    setPasswordResetState({ status: 'loading', message: '' });
+    const { success, message } = await sendPasswordResetEmail(formData.email);
+    if (success) {
+      setPasswordResetState({
+        status: 'sent',
+        message: 'Un lien de réinitialisation a été envoyé à votre e-mail.',
+      });
+    } else {
+      setPasswordResetState({ status: 'error', message: message });
+    }
+  };
+
   if (loading) {
-    return <div>Chargement...</div>;
+    return (
+      <div className="flex flex-col w-screen h-screen">
+        <PgHeader2 />
+        <div className="flex justify-center items-center h-screen">Chargement...</div>
+
+        <PgFooter />
+      </div>
+    )
   }
 
   if (error) {
-    return <div className="text-red-500">{error}</div>;
+    return (
+      <div className="flex flex-col w-screen h-screen">
+        <PgHeader2 />
+        <div className="flex flex-col justify-center items-center h-screen text-center gap-4 p-4">
+          <p className="text-red-500 font-semibold text-lg">{error}</p>
+          <button
+            onClick={() => location.reload()}
+            className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg"
+          >
+            Retour
+          </button>
+        </div>
+
+        <PgFooter />
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col w-screen h-screen">
       <PgHeader2 />
-      <div className="flex flex-col justify-start items-center h-[calc(100vh-7.25rem)] w-full overflow-y-auto py-4">
+      <div className="flex flex-col justify-start items-center h-[calc(100vh-7.25rem)] w-full overflow-y-auto py-8">
         <form
           className="bg-stone-500 flex flex-row flex-wrap items-center justify-center p-2 rounded-lg min-w-80 max-w-2xl"
           onSubmit={HandleSubmit}
-          onChange={handleFormChange}
           autoComplete="on"
           noValidate
         >
@@ -292,11 +375,12 @@ export default function UserInfosUpdate() {
 
           <div className="row flex w-full justify-center items-center space-x-3">
             <div
-              className={`flex flex-col items-center ${
-                role !== "Administrateur" ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className={`flex flex-col items-center ${role !== "Administrateur" || originalType === "Vétérinaire"
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+                }`}
               onClick={() =>
-                role === "Administrateur" &&
+                role === "Administrateur" && originalType !== "Vétérinaire" &&
                 setFormData((p) => ({ ...p, type: "Vétérinaire" }))
               }
               title="Médecin Vétérinaire"
@@ -316,7 +400,7 @@ export default function UserInfosUpdate() {
                   value="Vétérinaire"
                   checked={formData.type === "Vétérinaire"}
                   readOnly={true}
-                  disabled={role !== "Administrateur"}
+                  disabled={role !== "Administrateur" || originalType === "Vétérinaire"}
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
                 Vétérinaire
@@ -324,11 +408,12 @@ export default function UserInfosUpdate() {
             </div>
             <div className="text-gray-400"> | </div>
             <div
-              className={`flex flex-col items-center ${
-                role !== "Administrateur" ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className={`flex flex-col items-center ${role !== "Administrateur" || originalType === "Vétérinaire"
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+                }`}
               onClick={() =>
-                role === "Administrateur" &&
+                role === "Administrateur" && originalType !== "Vétérinaire" &&
                 setFormData((p) => ({ ...p, type: "Ayant droit" }))
               }
               title="Personne autorisée par le ministère et les administrateurs (Police, Gendarmerie etc...)"
@@ -348,7 +433,7 @@ export default function UserInfosUpdate() {
                   value="Ayant droit"
                   checked={formData.type === "Ayant droit"}
                   readOnly={true}
-                  disabled={role !== "Administrateur"}
+                  disabled={role !== "Administrateur" || originalType === "Vétérinaire"}
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
                 Ayant droit
@@ -356,11 +441,12 @@ export default function UserInfosUpdate() {
             </div>
             <div className="text-gray-400"> | </div>
             <div
-              className={`flex flex-col items-center ${
-                role !== "Administrateur" ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className={`flex flex-col items-center ${role !== "Administrateur" || originalType === "Vétérinaire"
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+                }`}
               onClick={() =>
-                role === "Administrateur" &&
+                role === "Administrateur" && originalType !== "Vétérinaire" &&
                 setFormData((p) => ({ ...p, type: "Administrateur" }))
               }
               title="Ministre et administrateur du site"
@@ -391,17 +477,23 @@ export default function UserInfosUpdate() {
                   value="Administrateur"
                   checked={formData.type === "Administrateur"}
                   readOnly={true}
-                  disabled={role !== "Administrateur"}
+                  disabled={role !== "Administrateur" || originalType === "Vétérinaire"}
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
                 Administrateur
               </label>
             </div>
           </div>
-          {role !== "Administrateur" && (
+          {role !== "Administrateur" ? (
             <p className="text-xs text-gray-300 mt-2 w-full text-center">
               Seul un administrateur peut modifier le type de compte.
             </p>
+          ) : (
+            originalType === "Vétérinaire" && (
+              <p className="text-xs text-yellow-300 mt-2 w-full text-center">
+                Le rôle d'un vétérinaire ne peut pas être modifié pour préserver l'intégrité de ses données.
+              </p>
+            )
           )}
           <div className="border-t-0 border-2 border-gray-400 w-full m-2"></div>
 
@@ -415,11 +507,12 @@ export default function UserInfosUpdate() {
               <input
                 className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
                 type="text"
-                name="famName"
+                name="fam_nme"
                 placeholder="Nom"
                 autoComplete="family-name"
-                value={formData.famName}
+                value={formData.fam_nme}
                 required={true}
+                onChange={handleFormChange}
               />
             </label>
             <label
@@ -430,30 +523,30 @@ export default function UserInfosUpdate() {
               <input
                 className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
                 type="text"
-                name="name"
+                name="nme"
                 placeholder="Prénom"
                 // standard token for given/first name
                 autoComplete="given-name"
-                value={formData.name}
+                value={formData.nme}
+                onChange={handleFormChange}
                 required={true}
               />
             </label>
             <label
-              className={`flex ${
-                formData.type === "Vétérinaire" ? "text-orange-200" : ""
-              } w-72 items-center justify-end`}
+              className={`flex ${formData.type === "Vétérinaire" ? "text-orange-200" : ""
+                } w-72 items-center justify-end`}
               title="Numéro de téléphone"
             >
               N° Tél :
               <input
-                className={`m-1 rounded-md text-black pl-1 w-45  ${
-                  formData.type === "Vétérinaire" ? "!border-orange-200" : ""
-                }`}
+                className={`m-1 rounded-md text-black pl-1 w-45  ${formData.type === "Vétérinaire" ? "!border-orange-200" : ""
+                  }`}
                 id="phone"
-                name="telNum"
+                name="phone"
                 type="tel"
                 placeholder="N° Tél"
-                value={formData.telNum}
+                value={formData.phone}
+                onChange={handleFormChange}
                 required={formData.type === "Vétérinaire"}
               />
             </label>
@@ -465,8 +558,9 @@ export default function UserInfosUpdate() {
               <input
                 className="m-1 rounded-md text-black pl-1 w-45"
                 type="text"
-                name="cni"
-                value={formData.cni}
+                name="num_cni"
+                value={formData.num_cni}
+                onChange={handleFormChange}
                 placeholder="N° Carte Nationale d'Identité"
               />
             </label>
@@ -479,8 +573,9 @@ export default function UserInfosUpdate() {
                 <input
                   className="m-1 rounded-md text-black pl-1 w-45 "
                   type="text"
-                  name="anv"
-                  value={formData.anv}
+                  name="num_anv"
+                  value={formData.num_anv}
+                  onChange={handleFormChange}
                   placeholder="Code Autorité Vétérinaire Nationale"
                 />
               </label>
@@ -499,54 +594,123 @@ export default function UserInfosUpdate() {
                 type="text"
                 name="city"
                 value={formData.city}
+                onChange={handleFormChange}
                 placeholder="Cité"
               />
             </label>
             <label className="flex w-72 items-start justify-end">
               <span className="mt-1">Adresse :</span>
               <textarea
-                name="address"
+                name="adresse"
                 className="m-1 rounded-md text-black pl-1 w-45 h-15"
                 placeholder="Adresse"
-                value={formData.address}
+                value={formData.adresse}
+                onChange={handleFormChange}
               />
             </label>
           </div>
-          <div className="row w-full flex justify-center items-center gap-4 mt-4">
-            <div
-              className="flex w-full items-center ml-3"
-              title="Les champs marqués sont obligatoires"
-            >
-              <label className="w-fit text-xs h-4  border text-transparent border-orange-200 rounded-lg mr-1 justify-center items-center">
-                ***
-              </label>
-              <label className="text-orange-200 w-fit text-xs justify-center items-center">
-                Champs obligés
-              </label>
-            </div>
-          </div>
+          {/* --- Main Profile Save Button --- */}
 
           <div className="row w-full flex justify-center items-center gap-4">
             <button
               type="submit"
-              className="bg-green-700 text-md border-1 outline-white outline-none hover:outline-black hover:text-black rounded-full p-1.5 m-2 w-36"
+              className="bg-green-700 text-md border-1 outline-white outline-none hover:outline-black hover:text-black rounded-full p-1.5 m-2 w-52"
               disabled={loading}
             >
-              {loading ? "Enregistrement..." : "Enregistrer"}
+              {loading ? "Enregistrement..." : "Enregistrer les informations"}
             </button>
+
+            {error && <p className="text-red-400 font-semibold">{error}</p>}
             {message && (
               <p className="text-green-300 font-semibold max-w-xs text-center">
                 {message}
               </p>
             )}
-            {error && <p className="text-red-400 font-semibold">{error}</p>}
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="bg-gray-500 text-md border-1 outline-white outline-none hover:outline-black hover:text-black rounded-full p-1.5 m-2 w-36"
-            >
-              Annuler
-            </button>
+          </div>
+          <div className="flex justify-end w-full items-center ml-3 mt-0" title="Les champs marqués sont obligatoires">
+            <label className="w-fit text-xs h-4  border text-transparent border-orange-200 rounded-lg mr-1 justify-center items-center">
+              ***
+            </label>
+            <label className="text-orange-200 w-fit text-xs justify-center items-center">
+              Champs obligés
+            </label>
+          </div>
+          <div className="border-t-2 border-gray-400 w-full m-2"></div>
+          {/* --- Email and Password Section --- */}
+          <div
+            className="flex flex-wrap justify-center w-full"
+            onKeyDown={(e) => { if (e.key === 'Enter' && isEmailEditing) { e.preventDefault(); handleEmailUpdate(); } }}
+          >
+            <div className="flex flex-col items-center justify-center w-full max-w-md px-4">
+              {isEmailChangePending ? (
+                <div className="text-center bg-yellow-200 text-yellow-800 p-3 rounded-lg w-full flex flex-col items-center">
+                  <p className="font-semibold">Confirmation en attente</p>
+                  <p className="text-sm">
+                    Veuillez confirmer votre nouvelle adresse e-mail : <br />
+                    <strong className="break-all">{pendingEmail}</strong>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCancelEmailChange}
+                    className="mt-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded-lg disabled:opacity-50"
+                    disabled={emailLoading}
+                  >
+                    {emailLoading ? 'Annulation...' : 'Annuler'}
+                  </button>
+                </div>
+              ) : (
+                <label className="flex text-orange-200 w-full items-center justify-between mb-2">
+                  Email :
+                  <div className="flex items-center">
+                    <input
+                      className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200 disabled:bg-gray-300 disabled:text-gray-500"
+                      type="email"
+                      name="email"
+                      placeholder="Email"
+                      value={formData.email}
+                      required={true}
+                      onChange={handleFormChange}
+                      disabled={!isEmailEditing}
+                    />
+                    <button
+                      type="button"
+                      onClick={isEmailEditing ? handleEmailUpdate : handleEnableEmailEdit}
+                      className={`text-white px-2 py-1 rounded-md text-xs ml-2 ${isEmailEditing ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-500 hover:bg-blue-600'}`} disabled={emailLoading}>
+                      {emailLoading ? '...' : (isEmailEditing ? 'Enregistrer' : 'Modifier')}
+                    </button>
+                  </div>
+                </label>
+              )}
+
+              {isEmailEditing && !isEmailChangePending && (
+                <p className="text-yellow-300 text-xs w-full text-center mb-4">
+                  La confirmation sera requise pour la nouvelle adresse e-mail.
+                </p>
+              )}
+              {emailMessage && (
+                <p className="text-green-300 font-semibold text-center mt-2">{emailMessage}</p>
+              )}
+              {error && isEmailEditing && (
+                <p className="text-red-400 font-semibold text-center mt-2">{error}</p>
+              )}
+              <div className="flex flex-row justify-center items-center w-full gap-4">
+                <button
+                  type="button"
+                  onClick={handlePasswordReset}
+                  className={`bg-stone-700 text-white font-bold py-2 px-4 rounded-2xl hover:bg-stone-800 w-60 mt-2 disabled:bg-stone-500 disabled:cursor-not-allowed`}
+                  title="Changer le mot de passe"
+                  disabled={passwordResetState.status === 'loading' || passwordResetState.status === 'sent'}
+                >
+                  {passwordResetState.status === 'loading' ? 'Envoi en cours...' : 'Changer le mot de passe'}
+                </button>
+                {passwordResetState.status !== 'idle' && (
+                  <p className={`text-center text-xs max-w-xs ${passwordResetState.status === 'error' ? 'text-red-400' : 'text-yellow-300'}`}>
+                    {passwordResetState.message}
+                  </p>
+                )}
+              </div>
+
+            </div>
           </div>
           <div className="border-t-2 border-gray-400 w-full m-2"></div>
           <div className="flex w-full justify-center items-center gap-4 p-2">
@@ -562,192 +726,21 @@ export default function UserInfosUpdate() {
               <button
                 type="button"
                 onClick={() => handleAccountDeleteRequest(true)}
-                className="bg-yellow-600 hover:bg-yellow-800 text-white font-bold py-2 px-4 rounded-2xl"
+                className="bg-red-400 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-2xl"
+                title="Attenton, cette action est irréversible et supprimera votre compte permanentement."
               >
                 Demander la suppression du compte
               </button>
             )}
-          </div>
-        </form>
-
-        {/* --- Auth Update Form --- */}
-        <form
-          className="bg-stone-600 flex flex-row flex-wrap items-center justify-center p-2 rounded-lg min-w-80 max-w-2xl mt-4"
-          onSubmit={handleAuthUpdate}
-          onChange={handleFormChange}
-          autoComplete="off"
-          noValidate
-        >
-          <h2 className="text-xl font-bold text-slate-300 text-center items-center w-full">
-            Sécurité du compte
-          </h2>
-          <div className="border-t-1 border-gray-400 w-[80%] m-2 mb-4" />
-
-          <div className="flex flex-wrap justify-center">
-            <div
-              className="flex flex-col items-center justify-center"
-              title={`Important : utilisez une adresse e-mail valide,\ncar vous en aurez besoin pour confirmer votre inscription.`}
-            >
-              <label className="flex text-orange-200 w-72 items-center justify-end">
-                Email :
-                <input
-                  className="m-1 rounded-md text-black pl-1 w-45 !border-orange-200"
-                  type="email"
-                  name="email"
-                  placeholder="Email"
-                  autoComplete="email"
-                  value={formData.email}
-                  required={true}
-                />
-              </label>
-              {formData.email !== originalEmail && (
-                <p className="text-red-400 text-xs w-72 text-center">
-                  La confirmation sera requise pour la nouvelle adresse e-mail.
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label
-                className="flex w-72 items-center justify-end"
-                title="Laissez vide pour ne pas changer"
-              >
-                Nouveau mot de passe :
-                <input
-                  className={`m-1 rounded-md text-black pl-1 w-45 ${passwordError}`}
-                  name="password"
-                  type={ShowPass ? "password" : "text"}
-                  placeholder="Laissez vide pour ne pas changer"
-                  value={formData.password}
-                  autoComplete="new-password"
-                />
-                <svg
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                  onClick={() => {
-                    SetshowPass(false);
-                  }}
-                  style={{ display: ShowPass ? "block" : "none" }}
-                  className="mr-1 absolute text-gray-400 cursor-pointer"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-                  ></path>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  ></path>
-                </svg>
-                <svg
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                  onClick={() => {
-                    SetshowPass(true);
-                  }}
-                  style={{ display: ShowPass ? "none" : "block" }}
-                  className="mr-1 absolute text-gray-400 cursor-pointer"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
-                  ></path>
-                </svg>
-              </label>
-
-              <label
-                className="flex w-72 items-center justify-end"
-                title="Veuillez retapper le mot de passe pour le confirmer"
-              >
-                Confirmer :
-                <input
-                  className={`m-1 rounded-md text-black pl-1 w-45 ${passwordError}`}
-                  name="password2"
-                  type={ShowPass2 ? "password" : "text"}
-                  placeholder="Confirmer"
-                  value={formData.password2}
-                  autoComplete="new-password"
-                />
-                <svg
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                  onClick={() => {
-                    SetshowPass2(false);
-                  }}
-                  style={{ display: ShowPass2 ? "block" : "none" }}
-                  className="mr-1 absolute text-gray-400 cursor-pointer"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-                  ></path>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  ></path>
-                </svg>
-                <svg
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  viewBox="0 0 24 24"
-                  width="20"
-                  height="20"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                  onClick={() => {
-                    SetshowPass2(true);
-                  }}
-                  style={{ display: ShowPass2 ? "none" : "block" }}
-                  className="mr-1 absolute text-gray-400 cursor-pointer"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
-                  ></path>
-                </svg>
-              </label>
-            </div>
-          </div>
-          <div className="row w-full flex justify-center items-center gap-4 mt-4">
-            <button
-              type="submit"
-              className="bg-green-700 text-md border-1 outline-white outline-none hover:outline-black hover:text-black rounded-full p-1.5 m-2 w-55"
-              disabled={authLoading}
-            >
-              {authLoading ? "Enregistrement..." : "Changer Email/Mot de passe"}
-            </button>
-            {authMessage && (
+            {ActDelMsg && (
               <p className="text-green-300 font-semibold max-w-xs text-center">
-                {authMessage}
+                {ActDelMsg}
               </p>
             )}
           </div>
+
         </form>
+
       </div>
       <PgFooter />
     </div>

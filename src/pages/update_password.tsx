@@ -151,7 +151,7 @@ const UpdatePasswordPage: React.FC = () => {
           onSubmit={handlePasswordUpdate}
           className="bg-stone-500 flex items-center justify-around flex-col h-fit w-fit p-2 rounded-lg"
         >
-          <h1 className="text-2xl font-bold text-slate-300 text-center items-center w-fit">
+          <h1 className="text-xl font-bold text-slate-300 text-center items-center w-fit">
             Mettre à Jour le Mot de Passe
           </h1>
           <div className="border-t-1 border-gray-400 w-[80%] m-2 " />
@@ -229,7 +229,7 @@ const UpdatePasswordPage: React.FC = () => {
             </label>
 
             <label
-              className="flex text-orange-400 w-72 items-center justify-end"
+              className="flex text-orange-300 w-72 items-center justify-end"
               title="Veuillez retapper le mot de passe pour le confirmer"
             >
               Confirmer :
@@ -304,7 +304,7 @@ const UpdatePasswordPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`bg-green-700 text-md border-1 outline-white outline-none hover:outline-black hover:text-black rounded-2xl p-1.5 m-2 w-full ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               {loading ? "Mise à Jour..." : "Changer le Mot de Passe"}
             </button>
