@@ -4,6 +4,7 @@ import { PgHeader2 } from "../../components/PgHeader2";
 import PgFooter from "../../components/PgFooter";
 import { Table, type Column } from "../../components/Table";
 import UserEditPanel from "./UserEditPanel"; // Import the new component
+import { Link } from "react-router-dom";
 
 // Define the type for a veterinarian based on your tb_login table
 type Veterinarian = {
@@ -30,7 +31,8 @@ export default function ManageVets() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [selectedVetIds, setSelectedVetIds] = useState<string[]>([]);
   const [showEditForm, setShowEditForm] = useState(false);
-  const [showDeleteRequestNotification, setShowDeleteRequestNotification] = useState(false);
+  const [showDeleteRequestNotification, setShowDeleteRequestNotification] =
+    useState(false);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
 
   const fetchVets = useCallback(async () => {
@@ -48,7 +50,9 @@ export default function ManageVets() {
         throw fetchError;
       }
 
-      const vetsAskingForDelete = (data || []).filter(v => v.asking_to_delete).length;
+      const vetsAskingForDelete = (data || []).filter(
+        (v) => v.asking_to_delete
+      ).length;
       if (vetsAskingForDelete > 0) {
         setShowDeleteRequestNotification(true);
       } else {
@@ -123,7 +127,9 @@ export default function ManageVets() {
   useEffect(() => {
     // If the selected vet is no longer in the processed list (due to filtering),
     // or if the list is empty, deselect it and hide the form.
-    const newSelectedIds = selectedVetIds.filter(id => processedVets.some(v => v.id === id));
+    const newSelectedIds = selectedVetIds.filter((id) =>
+      processedVets.some((v) => v.id === id)
+    );
     if (newSelectedIds.length !== selectedVetIds.length) {
       setSelectedVetIds(newSelectedIds);
     }
@@ -136,9 +142,9 @@ export default function ManageVets() {
     if (selectedVetIds.length === 0) {
       return { canValidate: false, canInvalidate: false };
     }
-    const selectedVets = vets.filter(v => selectedVetIds.includes(v.id));
-    const canValidate = selectedVets.some(v => !v.validated);
-    const canInvalidate = selectedVets.some(v => v.validated);
+    const selectedVets = vets.filter((v) => selectedVetIds.includes(v.id));
+    const canValidate = selectedVets.some((v) => !v.validated);
+    const canInvalidate = selectedVets.some((v) => v.validated);
     return {
       canValidate,
       canInvalidate,
@@ -148,33 +154,45 @@ export default function ManageVets() {
   useEffect(() => {
     // Prevent background scroll when modal is open
     if (showEditForm) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = "auto";
     }
     // Cleanup on component unmount
-    return () => { document.body.style.overflow = 'auto'; };
+    return () => {
+      document.body.style.overflow = "auto";
+    };
   }, [showEditForm]);
 
-  const handleRowSelect = useCallback((id: string | number, isMulti: boolean) => {
-    const strId = String(id);
-    if (isMulti || isMultiSelectMode) {
-      setSelectedVetIds(prev =>
-        prev.includes(strId) ? prev.filter(i => i !== strId) : [...prev, strId]
-      );
-    } else {
-      setSelectedVetIds(prev => (prev.length === 1 && prev[0] === strId) ? [] : [strId]);
-    }
-    setShowEditForm(false); // Hide form if a new row is selected or deselected
-  }, [isMultiSelectMode]);
+  const handleRowSelect = useCallback(
+    (id: string | number, isMulti: boolean) => {
+      const strId = String(id);
+      if (isMulti || isMultiSelectMode) {
+        setSelectedVetIds((prev) =>
+          prev.includes(strId)
+            ? prev.filter((i) => i !== strId)
+            : [...prev, strId]
+        );
+      } else {
+        setSelectedVetIds((prev) =>
+          prev.length === 1 && prev[0] === strId ? [] : [strId]
+        );
+      }
+      setShowEditForm(false); // Hide form if a new row is selected or deselected
+    },
+    [isMultiSelectMode]
+  );
 
-  const handleSelectAll = useCallback((areAllSelected: boolean) => {
-    if (areAllSelected) {
-      setSelectedVetIds(processedVets.map(v => v.id));
-    } else {
-      setSelectedVetIds([]);
-    }
-  }, [processedVets]);
+  const handleSelectAll = useCallback(
+    (areAllSelected: boolean) => {
+      if (areAllSelected) {
+        setSelectedVetIds(processedVets.map((v) => v.id));
+      } else {
+        setSelectedVetIds([]);
+      }
+    },
+    [processedVets]
+  );
 
   const handleRowDoubleClick = useCallback((id: string | number) => {
     if (isMultiSelectMode) return; // Disable double-click in multi-select mode
@@ -188,29 +206,34 @@ export default function ManageVets() {
     }
   }, [selectedVetIds]);
 
-  const handleBulkStatusChange = useCallback(async (newStatus: boolean) => {
-    if (selectedVetIds.length === 0) return;
-    const statusText = newStatus ? 'valider' : 'invalider';
-    if (!window.confirm(`Êtes-vous sûr de vouloir ${statusText} ${selectedVetIds.length} utilisateur(s) ?`)) return;
+  const handleBulkStatusChange = useCallback(
+    async (newStatus: boolean) => {
+      if (selectedVetIds.length === 0) return;
 
-    try {
-      const { error: updateError } = await supabase
-        .from("tb_login")
-        .update({ validated: newStatus })
-        .in("id", selectedVetIds);
+      try {
+        const { error: updateError } = await supabase
+          .from("tb_login")
+          .update({ validated: newStatus })
+          .in("id", selectedVetIds);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
 
-      alert(`${selectedVetIds.length} utilisateur(s) mis à jour avec succès.`);
-      fetchVets(); // Refresh data
-    } catch (err) {
-      alert("Erreur lors de la mise à jour du statut.");
-      console.error("Error updating validation status:", err);
-    }
-  }, [selectedVetIds, fetchVets]);
+        fetchVets(); // Refresh data
+      } catch (err) {
+        alert("Erreur lors de la mise à jour du statut.");
+        console.error("Error updating validation status:", err);
+      }
+    },
+    [selectedVetIds, fetchVets]
+  );
 
   const handleDeleteClick = useCallback(async () => {
-    if (selectedVetIds.length > 0 && window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedVetIds.length} vétérinaire(s) ?`)) {
+    if (
+      selectedVetIds.length > 0 &&
+      window.confirm(
+        `Êtes-vous sûr de vouloir supprimer ${selectedVetIds.length} vétérinaire(s) ?`
+      )
+    ) {
       try {
         const { error: deleteError } = await supabase
           .from("tb_login")
@@ -220,7 +243,6 @@ export default function ManageVets() {
         if (deleteError) {
           throw deleteError;
         }
-        alert(`${selectedVetIds.length} vétérinaire(s) supprimé(s) avec succès.`);
         setSelectedVetIds([]);
         fetchVets(); // Refresh the list
       } catch (err: unknown) {
@@ -285,10 +307,11 @@ export default function ManageVets() {
         render: (vet) => (
           <div className="flex flex-col items-center gap-2">
             <span
-              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${vet.validated
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-                }`}
+              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                vet.validated
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
             >
               {vet.validated ? "Validé" : "Non validé"}
             </span>
@@ -322,48 +345,59 @@ export default function ManageVets() {
           <div className="flex flex-wrap items-center gap-4 mb-6">
             <button
               onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
-              className={`font-bold py-2 px-4 rounded-lg ${isMultiSelectMode ? 'bg-cyan-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+              className={`font-semibold py-2 px-5 rounded-full transition-colors duration-200 ${isMultiSelectMode ? "bg-cyan-600 text-white" : "bg-gray-300 hover:bg-gray-400 text-gray-800"}`}
             >
               Sélection Multiple
             </button>
-            <div className="h-8 border-l border-gray-300 mx-2"></div>
+            <div className="h-8 border-l border-gray-300 mx-2" />
             <button
               onClick={handleModifyClick}
-              disabled={selectedVetIds.length !== 1 || processedVets.length === 0}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
+              disabled={
+                selectedVetIds.length !== 1 || processedVets.length === 0
+              }
+              className="bg-blue-500 hover:bg-blue-600  text-white font-semibold py-2 px-5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-800"
             >
               Modifier
             </button>
             <button
+              onClick={handleDeleteClick}
+              disabled={
+                selectedVetIds.length === 0 || processedVets.length === 0
+              }
+              className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-800"
+            >
+              Supprimer
+            </button>
+            <div className="h-8 border-l border-gray-300 mx-2" />
+            <button
               onClick={() => handleBulkStatusChange(true)}
-              disabled={!selectionStatus.canValidate || processedVets.length === 0}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
+              disabled={
+                !selectionStatus.canValidate || processedVets.length === 0
+              }
+              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-800"
             >
               Valider
             </button>
             <button
               onClick={() => handleBulkStatusChange(false)}
-              disabled={!selectionStatus.canInvalidate || processedVets.length === 0}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
+              disabled={
+                !selectionStatus.canInvalidate || processedVets.length === 0
+              }
+              className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-800"
             >
               Invalider
             </button>
-            <button
-              onClick={handleDeleteClick}
-              disabled={selectedVetIds.length === 0 || processedVets.length === 0}
-              className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
-            >
-              Supprimer
-            </button>
-            {showDeleteRequestNotification && (
-              <button
-                onClick={() => setFilterStatus("asked_for_delete")}
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg"
-              >
-                Demandes de suppression ({vets.filter(v => v.asking_to_delete).length})
-              </button>
-            )}
 
+            {showDeleteRequestNotification && filterStatus === "all" && (
+              <label
+                onClick={() => setFilterStatus("asked_for_delete")}
+                // className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg"
+                className="text-orange-500 hover:text-orange-600  font-italic py-2 px-4 cursor-pointer"
+              >
+                Demandes de suppression (
+                {vets.filter((v) => v.asking_to_delete).length})
+              </label>
+            )}
           </div>
 
           {/* Controls: Search and Filter */}
@@ -413,9 +447,19 @@ export default function ManageVets() {
 
       {/* Modal Overlay for User Edit Panel */}
       {showEditForm && selectedVetIds.length === 1 && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200" onClick={(e) => e.stopPropagation()}>
-            <UserEditPanel userId={selectedVetIds[0]} onClose={handleEditFormClose} onSave={handleEditFormClose} />
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/75 p-4"
+          onClick={handleEditFormClose} // Close when clicking on the overlay
+        >
+          <div
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <UserEditPanel
+              userId={selectedVetIds[0]}
+              onClose={handleEditFormClose}
+              onSave={handleEditFormClose}
+            />
           </div>
         </div>
       )}
@@ -446,8 +490,9 @@ const ValidationToggle = ({
       />
       <div className="block bg-gray-600 w-14 h-8 rounded-full"></div>
       <div
-        className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${vet.validated ? "translate-x-6" : ""
-          }`}
+        className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${
+          vet.validated ? "translate-x-6" : ""
+        }`}
       ></div>
     </div>
   </label>

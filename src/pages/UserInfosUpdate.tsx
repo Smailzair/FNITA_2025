@@ -49,7 +49,10 @@ export default function UserInfosUpdate() {
   const [error, setError] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
 
-  const [passwordResetState, setPasswordResetState] = useState<{ status: 'idle' | 'loading' | 'sent' | 'error', message: string }>({ status: 'idle', message: '' });
+  const [passwordResetState, setPasswordResetState] = useState<{
+    status: "idle" | "loading" | "sent" | "error";
+    message: string;
+  }>({ status: "idle", message: "" });
 
   const navigate = useNavigate();
 
@@ -100,8 +103,8 @@ export default function UserInfosUpdate() {
     function handleResize() {
       setIsSmallScreen(
         (window.innerHeight <= 455 && window.innerWidth > 490) ||
-        (window.innerHeight <= 600 && window.innerWidth <= 500) ||
-        (window.innerHeight <= 600 && window.innerWidth <= 338)
+          (window.innerHeight <= 600 && window.innerWidth <= 500) ||
+          (window.innerHeight <= 600 && window.innerWidth <= 338)
       );
     }
 
@@ -148,7 +151,10 @@ export default function UserInfosUpdate() {
       }
     }
 
-    const profileUpdates: Partial<typeof formData> = { ...formData, email: originalEmail };
+    const profileUpdates: Partial<typeof formData> = {
+      ...formData,
+      email: originalEmail,
+    };
     delete profileUpdates.email; // Email is handled separately
 
     // Update profile data in tb_login
@@ -186,7 +192,6 @@ export default function UserInfosUpdate() {
     }
     // --- End Validation ---
 
-
     setEmailLoading(true);
     setError("");
     setEmailMessage("");
@@ -213,8 +218,11 @@ export default function UserInfosUpdate() {
       setEmailLoading(false);
       return;
     }
-    if (existingUserError && existingUserError.code !== 'PGRST116') { // PGRST116 = no rows found, which is good
-      setError(`Erreur lors de la vérification de l'e-mail: ${existingUserError.message}`);
+    if (existingUserError && existingUserError.code !== "PGRST116") {
+      // PGRST116 = no rows found, which is good
+      setError(
+        `Erreur lors de la vérification de l'e-mail: ${existingUserError.message}`
+      );
       setEmailLoading(false);
       return;
     }
@@ -234,7 +242,9 @@ export default function UserInfosUpdate() {
     // It will be updated by a database trigger once the user confirms the change in `auth.users`.
 
     setEmailLoading(false);
-    setEmailMessage("Veuillez consulter votre nouvelle boîte de réception pour confirmer le changement d'adresse e-mail. Vous serez déconnecté.");
+    setEmailMessage(
+      "Veuillez consulter votre nouvelle boîte de réception pour confirmer le changement d'adresse e-mail. Vous serez déconnecté."
+    );
     setIsEmailEditing(false); // Disable editing and show "Modifier" again
     setIsEmailChangePending(true);
     setPendingEmail(formData.email);
@@ -252,18 +262,22 @@ export default function UserInfosUpdate() {
     setEmailMessage("");
 
     // Call the custom RPC function to cancel the email change in auth.users
-    const { error } = await supabase.rpc('cancel_email_change');
+    const { error } = await supabase.rpc("cancel_email_change");
 
     setEmailLoading(false);
 
     if (error) {
-      setError(`Erreur lors de l'annulation: ${error.message}. Veuillez rafraîchir la page.`);
+      setError(
+        `Erreur lors de l'annulation: ${error.message}. Veuillez rafraîchir la page.`
+      );
     } else {
       // Force a session refresh to get the updated user object without the pending email change.
       // This will trigger onAuthStateChange and update the `user` from the useAuth hook.
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) {
-        setError("Le changement a été annulé, mais la session n'a pas pu être rafraîchie. Veuillez rafraîchir la page.");
+        setError(
+          "Le changement a été annulé, mais la session n'a pas pu être rafraîchie. Veuillez rafraîchir la page."
+        );
       } else {
         // The UI will now update automatically via the useEffect hook listening to the `user` object.
         // We can still reset local state for immediate feedback.
@@ -289,7 +303,9 @@ export default function UserInfosUpdate() {
     setFormData((p) => ({ ...p, asking_to_delete: status }));
   }
 
-  function handleFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  function handleFormChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) {
     const target = e.target as HTMLInputElement | HTMLTextAreaElement;
     const { name, value } = target;
 
@@ -302,25 +318,23 @@ export default function UserInfosUpdate() {
     setMessage("");
     setActDelMsg("");
     setEmailMessage("");
-    setPasswordResetState({ status: 'idle', message: '' });
+    setPasswordResetState({ status: "idle", message: "" });
   }
 
   const handleEnableEmailEdit = () => {
-    if (window.confirm("Pour changer votre e-mail, vous devrez le confirmer via un message qui vous sera envoyé. Continuer ?")) {
-      setIsEmailEditing(true);
-    }
-  }
+    setIsEmailEditing(true);
+  };
 
   const handlePasswordReset = async () => {
-    setPasswordResetState({ status: 'loading', message: '' });
+    setPasswordResetState({ status: "loading", message: "" });
     const { success, message } = await sendPasswordResetEmail(formData.email);
     if (success) {
       setPasswordResetState({
-        status: 'sent',
-        message: 'Un lien de réinitialisation a été envoyé à votre e-mail.',
+        status: "sent",
+        message: "Un lien de réinitialisation a été envoyé à votre e-mail.",
       });
     } else {
-      setPasswordResetState({ status: 'error', message: message });
+      setPasswordResetState({ status: "error", message: message });
     }
   };
 
@@ -328,11 +342,13 @@ export default function UserInfosUpdate() {
     return (
       <div className="flex flex-col w-screen h-screen">
         <PgHeader2 />
-        <div className="flex justify-center items-center h-screen">Chargement...</div>
+        <div className="flex justify-center items-center h-screen">
+          Chargement...
+        </div>
 
         <PgFooter />
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -351,7 +367,7 @@ export default function UserInfosUpdate() {
 
         <PgFooter />
       </div>
-    )
+    );
   }
 
   return (
@@ -375,12 +391,14 @@ export default function UserInfosUpdate() {
 
           <div className="row flex w-full justify-center items-center space-x-3">
             <div
-              className={`flex flex-col items-center ${role !== "Administrateur" || originalType === "Vétérinaire"
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer"
-                }`}
+              className={`flex flex-col items-center ${
+                role !== "Administrateur" || originalType === "Vétérinaire"
+                  ? "opacity-50 cursor-not-allowed"
+                  : "cursor-pointer"
+              }`}
               onClick={() =>
-                role === "Administrateur" && originalType !== "Vétérinaire" &&
+                role === "Administrateur" &&
+                originalType !== "Vétérinaire" &&
                 setFormData((p) => ({ ...p, type: "Vétérinaire" }))
               }
               title="Médecin Vétérinaire"
@@ -400,7 +418,9 @@ export default function UserInfosUpdate() {
                   value="Vétérinaire"
                   checked={formData.type === "Vétérinaire"}
                   readOnly={true}
-                  disabled={role !== "Administrateur" || originalType === "Vétérinaire"}
+                  disabled={
+                    role !== "Administrateur" || originalType === "Vétérinaire"
+                  }
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
                 Vétérinaire
@@ -408,12 +428,14 @@ export default function UserInfosUpdate() {
             </div>
             <div className="text-gray-400"> | </div>
             <div
-              className={`flex flex-col items-center ${role !== "Administrateur" || originalType === "Vétérinaire"
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer"
-                }`}
+              className={`flex flex-col items-center ${
+                role !== "Administrateur" || originalType === "Vétérinaire"
+                  ? "opacity-50 cursor-not-allowed"
+                  : "cursor-pointer"
+              }`}
               onClick={() =>
-                role === "Administrateur" && originalType !== "Vétérinaire" &&
+                role === "Administrateur" &&
+                originalType !== "Vétérinaire" &&
                 setFormData((p) => ({ ...p, type: "Ayant droit" }))
               }
               title="Personne autorisée par le ministère et les administrateurs (Police, Gendarmerie etc...)"
@@ -433,7 +455,9 @@ export default function UserInfosUpdate() {
                   value="Ayant droit"
                   checked={formData.type === "Ayant droit"}
                   readOnly={true}
-                  disabled={role !== "Administrateur" || originalType === "Vétérinaire"}
+                  disabled={
+                    role !== "Administrateur" || originalType === "Vétérinaire"
+                  }
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
                 Ayant droit
@@ -441,12 +465,14 @@ export default function UserInfosUpdate() {
             </div>
             <div className="text-gray-400"> | </div>
             <div
-              className={`flex flex-col items-center ${role !== "Administrateur" || originalType === "Vétérinaire"
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer"
-                }`}
+              className={`flex flex-col items-center ${
+                role !== "Administrateur" || originalType === "Vétérinaire"
+                  ? "opacity-50 cursor-not-allowed"
+                  : "cursor-pointer"
+              }`}
               onClick={() =>
-                role === "Administrateur" && originalType !== "Vétérinaire" &&
+                role === "Administrateur" &&
+                originalType !== "Vétérinaire" &&
                 setFormData((p) => ({ ...p, type: "Administrateur" }))
               }
               title="Ministre et administrateur du site"
@@ -477,7 +503,9 @@ export default function UserInfosUpdate() {
                   value="Administrateur"
                   checked={formData.type === "Administrateur"}
                   readOnly={true}
-                  disabled={role !== "Administrateur" || originalType === "Vétérinaire"}
+                  disabled={
+                    role !== "Administrateur" || originalType === "Vétérinaire"
+                  }
                   className="mr-1 h-4 w-4 text-teal-600 bg-gray-100 border-gray-300 focus:ring-teal-500 dark:focus:ring-teal-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                 />
                 Administrateur
@@ -491,7 +519,8 @@ export default function UserInfosUpdate() {
           ) : (
             originalType === "Vétérinaire" && (
               <p className="text-xs text-yellow-300 mt-2 w-full text-center">
-                Le rôle d'un vétérinaire ne peut pas être modifié pour préserver l'intégrité de ses données.
+                Le rôle d'un vétérinaire ne peut pas être modifié pour préserver
+                l'intégrité de ses données.
               </p>
             )
           )}
@@ -533,14 +562,16 @@ export default function UserInfosUpdate() {
               />
             </label>
             <label
-              className={`flex ${formData.type === "Vétérinaire" ? "text-orange-200" : ""
-                } w-72 items-center justify-end`}
+              className={`flex ${
+                formData.type === "Vétérinaire" ? "text-orange-200" : ""
+              } w-72 items-center justify-end`}
               title="Numéro de téléphone"
             >
               N° Tél :
               <input
-                className={`m-1 rounded-md text-black pl-1 w-45  ${formData.type === "Vétérinaire" ? "!border-orange-200" : ""
-                  }`}
+                className={`m-1 rounded-md text-black pl-1 w-45  ${
+                  formData.type === "Vétérinaire" ? "!border-orange-200" : ""
+                }`}
                 id="phone"
                 name="phone"
                 type="tel"
@@ -627,7 +658,10 @@ export default function UserInfosUpdate() {
               </p>
             )}
           </div>
-          <div className="flex justify-end w-full items-center ml-3 mt-0" title="Les champs marqués sont obligatoires">
+          <div
+            className="flex justify-end w-full items-center ml-3 mt-0"
+            title="Les champs marqués sont obligatoires"
+          >
             <label className="w-fit text-xs h-4  border text-transparent border-orange-200 rounded-lg mr-1 justify-center items-center">
               ***
             </label>
@@ -639,7 +673,12 @@ export default function UserInfosUpdate() {
           {/* --- Email and Password Section --- */}
           <div
             className="flex flex-wrap justify-center w-full"
-            onKeyDown={(e) => { if (e.key === 'Enter' && isEmailEditing) { e.preventDefault(); handleEmailUpdate(); } }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && isEmailEditing) {
+                e.preventDefault();
+                handleEmailUpdate();
+              }
+            }}
           >
             <div className="flex flex-col items-center justify-center w-full max-w-md px-4">
               {isEmailChangePending ? (
@@ -655,7 +694,7 @@ export default function UserInfosUpdate() {
                     className="mt-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded-lg disabled:opacity-50"
                     disabled={emailLoading}
                   >
-                    {emailLoading ? 'Annulation...' : 'Annuler'}
+                    {emailLoading ? "Annulation..." : "Annuler"}
                   </button>
                 </div>
               ) : (
@@ -674,9 +713,19 @@ export default function UserInfosUpdate() {
                     />
                     <button
                       type="button"
-                      onClick={isEmailEditing ? handleEmailUpdate : handleEnableEmailEdit}
-                      className={`text-white px-2 py-1 rounded-md text-xs ml-2 ${isEmailEditing ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-500 hover:bg-blue-600'}`} disabled={emailLoading}>
-                      {emailLoading ? '...' : (isEmailEditing ? 'Enregistrer' : 'Modifier')}
+                      onClick={
+                        isEmailEditing
+                          ? handleEmailUpdate
+                          : handleEnableEmailEdit
+                      }
+                      className={`text-white px-2 py-1 rounded-md text-xs ml-2 ${isEmailEditing ? "bg-green-600 hover:bg-green-700" : "bg-blue-500 hover:bg-blue-600"}`}
+                      disabled={emailLoading}
+                    >
+                      {emailLoading
+                        ? "..."
+                        : isEmailEditing
+                          ? "Enregistrer"
+                          : "Modifier"}
                     </button>
                   </div>
                 </label>
@@ -684,14 +733,19 @@ export default function UserInfosUpdate() {
 
               {isEmailEditing && !isEmailChangePending && (
                 <p className="text-yellow-300 text-xs w-full text-center mb-4">
-                  Vous devrez confirmer le changement via votre nouvelle adresse e-mail.
+                  Vous devrez confirmer le changement via votre nouvelle adresse
+                  e-mail.
                 </p>
               )}
               {emailMessage && (
-                <p className="text-green-300 font-semibold text-center mt-2">{emailMessage}</p>
+                <p className="text-green-300 font-semibold text-center mt-2">
+                  {emailMessage}
+                </p>
               )}
               {error && isEmailEditing && (
-                <p className="text-red-400 font-semibold text-center mt-2">{error}</p>
+                <p className="text-red-400 font-semibold text-center mt-2">
+                  {error}
+                </p>
               )}
               <div className="flex flex-row justify-center items-center w-full gap-4">
                 <button
@@ -699,17 +753,23 @@ export default function UserInfosUpdate() {
                   onClick={handlePasswordReset}
                   className={`bg-stone-700 text-white font-bold py-2 px-4 rounded-2xl hover:bg-stone-800 w-60 mt-2 disabled:bg-stone-500 disabled:cursor-not-allowed`}
                   title="Changer le mot de passe"
-                  disabled={passwordResetState.status === 'loading' || passwordResetState.status === 'sent'}
+                  disabled={
+                    passwordResetState.status === "loading" ||
+                    passwordResetState.status === "sent"
+                  }
                 >
-                  {passwordResetState.status === 'loading' ? 'Envoi en cours...' : 'Changer le mot de passe'}
+                  {passwordResetState.status === "loading"
+                    ? "Envoi en cours..."
+                    : "Changer le mot de passe"}
                 </button>
-                {passwordResetState.status !== 'idle' && (
-                  <p className={`text-center text-xs max-w-xs ${passwordResetState.status === 'error' ? 'text-red-400' : 'text-yellow-300'}`}>
+                {passwordResetState.status !== "idle" && (
+                  <p
+                    className={`text-center text-xs max-w-xs ${passwordResetState.status === "error" ? "text-red-400" : "text-yellow-300"}`}
+                  >
                     {passwordResetState.message}
                   </p>
                 )}
               </div>
-
             </div>
           </div>
           <div className="border-t-2 border-gray-400 w-full m-2"></div>
@@ -738,9 +798,7 @@ export default function UserInfosUpdate() {
               </p>
             )}
           </div>
-
         </form>
-
       </div>
       <PgFooter />
     </div>

@@ -16,6 +16,7 @@ import AyDroitDashboard from "./pages/AyDroit/AyDroitDashboard";
 import NotValidatedYet from "./pages/NotValidatedYet";
 import UserInfosUpdate from "./pages/UserInfosUpdate";
 import EditUser from "./pages/Admins/EditUser";
+import UnderDevelopment from "./pages/UnderDevelopment";
 
 // Define UserRole enum to avoid magic strings
 export const UserRole = {
@@ -36,6 +37,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/notvalidatedyet" element={<NotValidatedYet />} />
         <Route path="/update_password" element={<UpdatePassword />} />
         <Route path="/userinfosupdate" element={<UserInfosUpdate />} />
+        <Route path="/underdevelopment" element={<UnderDevelopment />} />
         {/* Protected Routes */}
         <Route
           path="/admindashboard"
@@ -78,7 +80,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           }
         />
         {/* Fallback Route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/underdevelopment" replace />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

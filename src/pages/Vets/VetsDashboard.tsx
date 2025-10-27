@@ -6,66 +6,84 @@ export default function VetsDashboard() {
   return (
     <div className="flex flex-col w-screen h-screen bg-gray-50">
       <PgHeader2 />
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-16">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">
-            Tableau de Bord Vétérinaire
-          </h1>
-          <div className="flex flex-wrap gap-8 justify-center md:justify-start">
-            <DashboardButton
-              to="/vets/animaux"
-              icon={<AnimalIcon />}
-              title="Gestion des Animaux"
-              description="Consulter, ajouter ou modifier les fiches des animaux."
-            />
-            <DashboardButton
-              to="/vets/vaccinations"
-              icon={<VaccineIcon />}
-              title="Carnets de Vaccination"
-              description="Gérer les historiques de vaccination et les rappels."
-            />
-            <DashboardButton
-              to="/vets/facturation"
-              icon={<BillingIcon />}
-              title="Financement & Facturation"
-              description="Suivre les paiements, les factures et les financements."
-            />
-            <DashboardButton
-              to="/vets/rendez-vous"
-              icon={<CalendarIcon />}
-              title="Visites & Rendez-vous"
-              description="Planifier et gérer le calendrier des consultations."
-            />
-            <DashboardButton
-              to="/vets/laboratoire"
-              icon={<LabIcon />}
-              title="Gestion de Laboratoire"
-              description="Suivre les analyses et les résultats de laboratoire."
-            />
-            <DashboardButton
-              to="/vets/declarer-maladie"
-              icon={<ReportDiseaseIcon />}
-              title="Déclarer une Maladie"
-              description="Signaler les cas de maladies à déclaration obligatoire."
-            />
-            <DashboardButton
-              to="/vets/animal-perdu"
-              icon={<LostAnimalIcon />}
-              title="Signaler un Animal Perdu"
-              description="Aider à retrouver les animaux perdus en signalant un cas."
-            />
-            <DashboardButton
-              to="/vets/animal-trouve"
-              icon={<FoundAnimalIcon />}
-              title="Signaler un Animal Trouvé"
-              description="Enregistrer un animal trouvé pour retrouver son propriétaire."
-            />
-            <DashboardButton
-              to="/vets/stock"
-              icon={<StockIcon />}
-              title="Gestion des Stocks"
-              description="Suivre les médicaments et le matériel disponible."
-            />
+      <main
+        className="flex-1 p-4 md:p-8 overflow-y-auto pb-16"
+        // To make the background more "HD", replace '/PagesBg/001.jpg' with a higher resolution image.
+        style={{
+          backgroundImage: "url(/PagesBg/001.jpg)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Semi-transparent white overlay for better content readability */}
+        <div
+          style={{
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            padding: "20px",
+            borderRadius: "8px",
+          }}
+        >
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-3xl font-bold text-gray-800 mb-8">
+              Tableau de Bord Vétérinaire
+            </h1>
+            <div className="flex flex-wrap gap-8 justify-center md:justify-start">
+              <DashboardButton
+                to="/vets/animaux"
+                icon={<AnimalIcon />}
+                title="Gestion des Animaux"
+                description="Consulter, ajouter ou modifier les fiches des animaux."
+              />
+              <DashboardButton
+                to="/vets/vaccinations"
+                icon={<VaccineIcon />}
+                title="Carnets de Vaccination"
+                description="Gérer les historiques de vaccination et les rappels."
+              />
+              <DashboardButton
+                to="/vets/facturation"
+                icon={<BillingIcon />}
+                title="Financement & Facturation"
+                description="Suivre les paiements, les factures et les financements."
+              />
+              <DashboardButton
+                to="/vets/rendez-vous"
+                icon={<CalendarIcon />}
+                title="Visites & Rendez-vous"
+                description="Planifier et gérer le calendrier des consultations."
+              />
+              <DashboardButton
+                to="/vets/laboratoire"
+                icon={<LabIcon />}
+                title="Gestion de Laboratoire"
+                description="Suivre les analyses et les résultats de laboratoire."
+              />
+              <DashboardButton
+                to="/vets/declarer-maladie"
+                icon={<ReportDiseaseIcon />}
+                title="Déclarer une Maladie"
+                description="Signaler les cas de maladies à déclaration obligatoire."
+              />
+              <DashboardButton
+                to="/vets/animal-perdu"
+                icon={<LostAnimalIcon />}
+                title="Signaler un Animal Perdu"
+                description="Aider à retrouver les animaux perdus en signalant un cas."
+              />
+              <DashboardButton
+                to="/vets/animal-trouve"
+                icon={<FoundAnimalIcon />}
+                title="Signaler un Animal Trouvé"
+                description="Enregistrer un animal trouvé pour retrouver son propriétaire."
+              />
+              <DashboardButton
+                to="/vets/stock"
+                icon={<StockIcon />}
+                title="Gestion des Stocks"
+                description="Suivre les médicaments et le matériel disponible."
+              />
+            </div>
           </div>
         </div>
       </main>
