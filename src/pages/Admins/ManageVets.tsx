@@ -150,28 +150,23 @@ export default function ManageVets() {
       },
       {
         header: "Statut",
-        accessor: "validated",
+        accessor: "validated", // Keep accessor for sorting
         sortable: true,
         headerStyle: { textAlign: "center" },
         cellStyle: { textAlign: "center" },
         render: (vet) => (
-          <span
-            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${vet.validated
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-              }`}
-          >
-            {vet.validated ? "Validé" : "Non validé"}
-          </span>
+          <div className="flex flex-col items-center gap-2">
+            <span
+              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${vet.validated
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+                }`}
+            >
+              {vet.validated ? "Validé" : "Non validé"}
+            </span>
+            <ValidationToggle vet={vet} onToggle={handleValidationToggle} />
+          </div>
         ),
-      },
-      {
-        header: "Valider",
-        accessor: (vet) => (
-          <ValidationToggle vet={vet} onToggle={handleValidationToggle} />
-        ),
-        headerStyle: { textAlign: "center" },
-        cellStyle: { textAlign: "center" },
       },
     ],
     [handleValidationToggle]

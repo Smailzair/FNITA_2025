@@ -5,6 +5,7 @@ import DashboardNavBar from "./DashboardNavBar";
 
 export const PgHeader2 = () => {
   const [user_full_name, setUserFullName] = useState<string | null>(null);
+  const [user_name, setUserName] = useState<string | null>(null);
   const [user_type, setUserType] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -21,6 +22,7 @@ export const PgHeader2 = () => {
 
         if (user_infos !== null) {
           setUserFullName(user_infos.fam_nme ? user_infos.fam_nme : null);
+          setUserName(user_infos.nme ? user_infos.nme : null);
           setUserType(user_infos.type ? user_infos.type : null);
         }
       }
@@ -75,9 +77,10 @@ export const PgHeader2 = () => {
               <div className="inset-y-0 right-0 flex flex-col items-center pr-2 max-xs:hidden min-w-fit text-xs w-fit h-full justify-center">
                 {/* <label className="text-green-200 text-center">Bienvenue</label> */}
                 <label className="text-slate-200 text-center">
-                  Mr. {user_full_name}
+                  {user_full_name}<br />
+                  {user_name}
                 </label>
-                <label className="text-orange-200 text-center mb-1.5">
+                <label className="text-orange-200 text-center mb-0.75">
                   - {user_type} -
                 </label>
 

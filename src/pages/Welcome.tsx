@@ -8,18 +8,11 @@ export default function Home() {
     <Fragment>
       <div className="h-screen flex flex-col overflow-hidden">
         <PgHeader />
-
-        <main
-          className="flex-1 overflow-hidden"
-          style={{
-            paddingTop: `0px`,
-            paddingBottom: `40px`,
-          }}
-        >
+        <main className="flex-1 overflow-hidden">
           <Carousel />
         </main>
+        <PgFooter />
       </div>
-      <PgFooter />
     </Fragment>
   );
 }
