@@ -22,8 +22,12 @@ interface TableProps<T> {
   initialSortColumn?: keyof T;
   initialSortDirection?: SortDirection;
   // New props for row selection
-  selectedItemId?: string | number | null;
-  onRowSelect?: (id: string | number) => void;
+  selectedItemIds?: (string | number)[];
+  onRowSelect?: (id: string | number, isMulti: boolean) => void;
+  onRowDoubleClick?: (id: string | number) => void;
+  // Multi-select props
+  isMultiSelect?: boolean;
+  onSelectAll?: (areAllSelected: boolean) => void;
 }
 
 export function Table<T extends { id: string | number }>({
@@ -34,8 +38,11 @@ export function Table<T extends { id: string | number }>({
   emptyStateMessage = "No data found.",
   initialSortColumn,
   initialSortDirection = "desc",
-  selectedItemId,
+  selectedItemIds = [],
   onRowSelect,
+  onRowDoubleClick,
+  isMultiSelect = false,
+  onSelectAll,
 }: TableProps<T>) {
   const [sortColumn, setSortColumn] = useState(initialSortColumn);
   const [sortDirection, setSortDirection] =
@@ -94,6 +101,17 @@ export function Table<T extends { id: string | number }>({
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-100">
             <tr>
+              {isMultiSelect && (
+                <th className="px-6 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+                    checked={data.length > 0 && selectedItemIds.length === data.length}
+                    onChange={(e) => onSelectAll && onSelectAll(e.target.checked)}
+                    aria-label="Select all rows"
+                  />
+                </th>
+              )}
               {columns.map((col, index) => (
                 <th
                   key={index}
@@ -124,7 +142,7 @@ export function Table<T extends { id: string | number }>({
                   colSpan={columns.length}
                   className="text-center py-8 text-gray-500"
                 >
-                  Loading...
+                  Chargement...
                 </td>
               </tr>
             )}
@@ -154,9 +172,25 @@ export function Table<T extends { id: string | number }>({
                 <tr
                   key={item.id}
                   data-id={item.id} // Add data-id for easy access if needed
-                  className={`hover:bg-gray-100 ${selectedItemId === item.id ? 'bg-blue-100' : ''} ${onRowSelect ? 'cursor-pointer' : ''}`}
-                  onClick={onRowSelect ? () => onRowSelect(item.id) : undefined}
+                  className={`hover:bg-gray-100 ${selectedItemIds.includes(item.id) ? 'bg-blue-100' : ''} ${(onRowSelect || onRowDoubleClick) ? 'cursor-pointer' : ''}`}
+                  onClick={onRowSelect ? (e) => onRowSelect(item.id, e.ctrlKey || e.metaKey || isMultiSelect) : undefined}
+                  onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(item.id) : undefined}
                 >
+                  {isMultiSelect && (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+                        checked={selectedItemIds.includes(item.id)}
+                        onChange={(e) => {
+                          e.stopPropagation(); // Prevent the row's onClick from firing
+                          if (onRowSelect) {
+                            onRowSelect(item.id, true);
+                          }
+                        }}
+                      />
+                    </td>
+                  )}
                   {columns.map((col, index) => (
                     <td
                       key={index}

@@ -15,6 +15,7 @@ import VetsDashboard from "./pages/Vets/VetsDashboard";
 import AyDroitDashboard from "./pages/AyDroit/AyDroitDashboard";
 import NotValidatedYet from "./pages/NotValidatedYet";
 import UserInfosUpdate from "./pages/UserInfosUpdate";
+import EditUser from "./pages/Admins/EditUser";
 
 // Define UserRole enum to avoid magic strings
 export const UserRole = {
@@ -49,6 +50,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           element={
             <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
               <ManageVets />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/edit-user"
+          element={
+            <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+              <EditUser />
             </ProtectedRoute>
           }
         />

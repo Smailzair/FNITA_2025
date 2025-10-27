@@ -684,7 +684,7 @@ export default function UserInfosUpdate() {
 
               {isEmailEditing && !isEmailChangePending && (
                 <p className="text-yellow-300 text-xs w-full text-center mb-4">
-                  La confirmation sera requise pour la nouvelle adresse e-mail.
+                  Vous devrez confirmer le changement via votre nouvelle adresse e-mail.
                 </p>
               )}
               {emailMessage && (
