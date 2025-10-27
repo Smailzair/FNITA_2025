@@ -3,7 +3,7 @@ import { supabase } from "../../api/supabaseClient";
 import { PgHeader2 } from "../../components/PgHeader2";
 import PgFooter from "../../components/PgFooter";
 import { Table, type Column } from "../../components/Table";
-// import { Table, Column } from "../../components/Table";
+import UserEditPanel from "./UserEditPanel"; // Import the new component
 
 // Define the type for a veterinarian based on your tb_login table
 type Veterinarian = {
@@ -27,6 +27,8 @@ export default function ManageVets() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [selectedVetId, setSelectedVetId] = useState<string | null>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
 
   const fetchVets = useCallback(async () => {
     setLoading(true);
@@ -108,6 +110,48 @@ export default function ManageVets() {
     return filtered;
   }, [vets, searchTerm, filterStatus]);
 
+  const selectedVet = useMemo(() => {
+    return selectedVetId ? vets.find(vet => vet.id === selectedVetId) : null;
+  }, [selectedVetId, vets]);
+
+  const handleRowSelect = useCallback((id: string | number) => {
+    setSelectedVetId(prevId => (prevId === id ? null : String(id)));
+    setShowEditForm(false); // Hide form if a new row is selected or deselected
+  }, []);
+
+  const handleModifyClick = useCallback(() => {
+    if (selectedVetId) {
+      setShowEditForm(true);
+    }
+  }, [selectedVetId]);
+
+  const handleDeleteClick = useCallback(async () => {
+    if (selectedVetId && window.confirm("Êtes-vous sûr de vouloir supprimer ce vétérinaire ?")) {
+      try {
+        const { error: deleteError } = await supabase
+          .from("tb_login")
+          .delete()
+          .eq("id", selectedVetId);
+
+        if (deleteError) {
+          throw deleteError;
+        }
+        alert("Vétérinaire supprimé avec succès.");
+        setSelectedVetId(null);
+        fetchVets(); // Refresh the list
+      } catch (err: unknown) {
+        alert("Erreur lors de la suppression du vétérinaire.");
+        console.error("Error deleting veterinarian:", err);
+      }
+    }
+  }, [selectedVetId, fetchVets]);
+
+  const handleEditFormClose = useCallback(() => {
+    setShowEditForm(false);
+    setSelectedVetId(null); // Deselect the row when form closes
+    fetchVets(); // Refresh data after potential save
+  }, [fetchVets]);
+
   const columns: Column<Veterinarian>[] = useMemo(
     () => [
       {
@@ -158,8 +202,8 @@ export default function ManageVets() {
           <div className="flex flex-col items-center gap-2">
             <span
               className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${vet.validated
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
                 }`}
             >
               {vet.validated ? "Validé" : "Non validé"}
@@ -190,6 +234,24 @@ export default function ManageVets() {
             Gestion des Vétérinaires
           </h1>
 
+          {/* Action Buttons */}
+          <div className="flex gap-4 mb-6">
+            <button
+              onClick={handleModifyClick}
+              disabled={!selectedVetId || processedVets.length === 0}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
+            >
+              Modifier
+            </button>
+            <button
+              onClick={handleDeleteClick}
+              disabled={!selectedVetId || processedVets.length === 0}
+              className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
+            >
+              Supprimer
+            </button>
+          </div>
+
           {/* Controls: Search and Filter */}
           <div className="flex flex-row md:flex-row gap-4 mb-6">
             <input
@@ -217,14 +279,21 @@ export default function ManageVets() {
           {/* Data View */}
           <Table
             columns={columns}
-            data={processedVets}
+            data={processedVets} // Pass the processed (filtered/searched) data
             isLoading={loading}
             error={error}
             emptyStateMessage="Aucun vétérinaire trouvé."
             initialSortColumn="created_at"
+            selectedItemId={selectedVetId} // Pass selectedVetId to highlight the row
+            onRowSelect={handleRowSelect} // Handle row selection
           />
           <div className="border-t-3 border-gray-400 w-[80%] m-auto mt-4" />
         </div>
+
+        {/* User Edit Panel */}
+        {showEditForm && selectedVetId && (
+          <UserEditPanel userId={selectedVetId} onClose={handleEditFormClose} onSave={handleEditFormClose} />
+        )}
       </main>
       <PgFooter />
     </div>
