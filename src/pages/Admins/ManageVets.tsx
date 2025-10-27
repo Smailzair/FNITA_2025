@@ -4,7 +4,6 @@ import { PgHeader2 } from "../../components/PgHeader2";
 import PgFooter from "../../components/PgFooter";
 import { Table, type Column } from "../../components/Table";
 import UserEditPanel from "./UserEditPanel"; // Import the new component
-import { Link } from "react-router-dom";
 
 // Define the type for a veterinarian based on your tb_login table
 type Veterinarian = {
