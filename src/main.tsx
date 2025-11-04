@@ -17,6 +17,7 @@ import NotValidatedYet from "./pages/NotValidatedYet";
 import UserInfosUpdate from "./pages/UserInfosUpdate";
 import EditUser from "./pages/Admins/EditUser";
 import UnderDevelopment from "./pages/UnderDevelopment";
+import AnimalsManage from "./pages/Vets/AnimalsManage";
 
 // Define UserRole enum to avoid magic strings
 export const UserRole = {
@@ -25,63 +26,73 @@ export const UserRole = {
   AyDroit: "Ayant droit",
 } as const;
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Welcome />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/email_confirm" element={<EmailConfirm />} />
-        <Route path="/notvalidatedyet" element={<NotValidatedYet />} />
-        <Route path="/update_password" element={<UpdatePassword />} />
-        <Route path="/userinfosupdate" element={<UserInfosUpdate />} />
-        <Route path="/underdevelopment" element={<UnderDevelopment />} />
-        {/* Protected Routes */}
-        <Route
-          path="/admindashboard"
-          element={
-            <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/managevets"
-          element={
-            <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
-              <ManageVets />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/edit-user"
-          element={
-            <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
-              <EditUser />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/vetsdashboard"
-          element={
-            <ProtectedRoute allowedRoles={[UserRole.Adminis, UserRole.Vet]}>
-              <VetsDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/aydroitdashboard"
-          element={
-            <ProtectedRoute allowedRoles={[UserRole.Adminis, UserRole.AyDroit]}>
-              <AyDroitDashboard />
-            </ProtectedRoute>
-          }
-        />
-        {/* Fallback Route */}
-        <Route path="*" element={<Navigate to="/underdevelopment" replace />} />
-      </Routes>
-    </BrowserRouter>
-  </React.StrictMode>
-);
+const container = document.getElementById("root");
+if (container) {
+  const root = ReactDOM.createRoot(container);
+  root.render(
+    <React.StrictMode>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Welcome />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/email_confirm" element={<EmailConfirm />} />
+          <Route path="/notvalidatedyet" element={<NotValidatedYet />} />
+          <Route path="/update_password" element={<UpdatePassword />} />
+          <Route path="/userinfosupdate" element={<UserInfosUpdate />} />
+          <Route path="/underdevelopment" element={<UnderDevelopment />} />
+          <Route path="/animalsmanage" element={<AnimalsManage />} />
+          {/* Protected Routes */}
+          <Route
+            path="/admindashboard"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/managevets"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                <ManageVets />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-user"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                <EditUser />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vetsdashboard"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.Adminis, UserRole.Vet]}>
+                <VetsDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/aydroitdashboard"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.Adminis, UserRole.AyDroit]}
+              >
+                <AyDroitDashboard />
+              </ProtectedRoute>
+            }
+          />
+          {/* Fallback Route */}
+          <Route
+            path="*"
+            element={<Navigate to="/underdevelopment" replace />}
+          />
+        </Routes>
+      </BrowserRouter>
+    </React.StrictMode>
+  );
+}

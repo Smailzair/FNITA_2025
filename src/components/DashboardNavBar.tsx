@@ -61,7 +61,7 @@ const adminLinks = [
 
 const vetLinks = [
   { to: "/vetsdashboard", title: "Tableau de Bord", icon: <HomeIcon /> },
-  { to: "/vets/animaux", title: "Animaux", icon: <AnimalIcon /> },
+  { to: "/animalsmanage", title: "Animaux", icon: <AnimalIcon /> },
   { to: "/vets/vaccinations", title: "Vaccinations", icon: <VaccineIcon /> },
   { to: "/vets/rendez-vous", title: "Rendez-vous", icon: <CalendarIcon /> },
   {
@@ -105,9 +105,10 @@ export default function DashboardNavBar({ role }: DashboardNavBarProps) {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-          ? "bg-cyan-700 text-white"
-          : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+        `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          isActive
+            ? "bg-cyan-700 text-white"
+            : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
         }`
       }
       onClick={() => setIsMenuOpen(false)}
