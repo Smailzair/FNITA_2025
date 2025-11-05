@@ -1,9 +1,9 @@
-import { useState, useEffect, FormEvent } from "react";
+import type { FormEvent } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../../api/supabaseClient";
 import OwnerForm from "./OwnerForm";
 
 type Animal = {
-  id?: string;
   nme: string | null;
   num_ident: string | null;
   num_passport: string | null;
@@ -17,6 +17,7 @@ type Animal = {
   is_radiated: boolean | null;
   radiat_date: string | null;
   radiat_reason: string | null;
+  id?: string;
 };
 
 type Owner = {
@@ -151,20 +152,31 @@ const raceByEspece: Record<string, string[]> = {
   Camélidé: [],
 };
 
+const radiationReasons = [
+  "Décès",
+  "Vente",
+  "Perdu",
+  "Retrouvé par propriétaire",
+];
+
 type AnimalFormProps = {
   animal: Partial<Animal> | null;
   owners: Owner[];
+  animals: Animal[];
   onOwnerAdded: () => Promise<void>;
   onSave: () => void;
   onClose: () => void;
+  onAnimalChange: (animal: Animal) => void;
 };
 
 export default function AnimalForm({
   animal,
   owners,
+  animals,
   onOwnerAdded,
   onSave,
   onClose,
+  onAnimalChange,
 }: AnimalFormProps) {
   const [formData, setFormData] = useState<Partial<Animal>>({
     nme: "",
@@ -182,11 +194,61 @@ export default function AnimalForm({
     radiat_reason: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filteredRaceOptions, setFilteredRaceOptions] = useState(raceOptions);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
 
   const isEditing = animal && animal.id;
+
+  const ownersAnimalIds = useMemo(() => {
+    // Extract and memoize the list of animal IDs
+    return animals.map((animal) => animal.id as string);
+  }, [animals]);
+
+  const currentIndex = useMemo(() => {
+    if (!animal?.id) return 0;
+    const index = ownersAnimalIds.indexOf(animal.id);
+    return index >= 0 ? index + 1 : 0;
+  }, [animal?.id, ownersAnimalIds]);
+
+  const isFirstAnimal = useMemo(() => {
+    // Check if the current animal is the first in the list
+    return animal?.id ? ownersAnimalIds.indexOf(animal.id) === 0 : true;
+  }, [animal?.id, ownersAnimalIds]);
+
+  const isLastAnimal = useMemo(() => {
+    // Check if the current animal is the last in the list
+    return animal?.id
+      ? ownersAnimalIds.indexOf(animal.id) === ownersAnimalIds.length - 1
+      : true;
+  }, [animal?.id, ownersAnimalIds]);
+
+  const goToPreviousAnimal = () => {
+    if (!animal?.id) return;
+
+    const currentIndex = ownersAnimalIds.indexOf(animal.id);
+    if (currentIndex > 0) {
+      const previousAnimalId = ownersAnimalIds[currentIndex - 1];
+      const previousAnimal = animals.find((a) => a.id === previousAnimalId);
+      if (previousAnimal) {
+        onAnimalChange(previousAnimal as Animal);
+      }
+    }
+  };
+
+  const goToNextAnimal = () => {
+    if (!animal?.id) return;
+
+    const currentIndex = ownersAnimalIds.indexOf(animal.id);
+    if (currentIndex < ownersAnimalIds.length - 1) {
+      const nextAnimalId = ownersAnimalIds[currentIndex + 1];
+      const nextAnimal = animals.find((a) => a.id === nextAnimalId);
+      if (nextAnimal) {
+        onAnimalChange(nextAnimal as Animal);
+      }
+    }
+  };
 
   useEffect(() => {
     if (animal) {
@@ -201,6 +263,10 @@ export default function AnimalForm({
       // Check if espece/race are custom values
       const isCustomEspece =
         animal.espece && !especeOptions.includes(animal.espece);
+      const isCustomRadiatReason =
+        animal.radiat_reason &&
+        !radiationReasons.includes(animal.radiat_reason);
+
       const isCustomRace = animal.race && !raceOptions.includes(animal.race);
 
       setFormData({
@@ -210,6 +276,7 @@ export default function AnimalForm({
         // If the value is custom, set the dropdown to 'Autre'
         // The text input will then be populated by the value from the `animal` object spread
         espece: isCustomEspece ? "Autre" : animal.espece,
+        radiat_reason: isCustomRadiatReason ? "Autre" : animal.radiat_reason,
         race: isCustomRace ? "Autre" : animal.race,
       });
     }
@@ -241,6 +308,8 @@ export default function AnimalForm({
         if (checked) {
           // Default radiate date to today when checked
           newState.radiat_date = new Date().toISOString().split("T")[0];
+          // Default reason to empty to force user selection
+          newState.radiat_reason = "";
         } else {
           // Clear date and reason if unchecked
           newState.radiat_date = "";
@@ -311,6 +380,34 @@ export default function AnimalForm({
     }
   };
 
+  const handleDelete = async () => {
+    if (!isEditing || !animal?.id) return;
+
+    if (
+      window.confirm(
+        "Êtes-vous sûr de vouloir supprimer cet animal ? Cette action est irréversible."
+      )
+    ) {
+      setIsDeleting(true);
+      setError(null);
+      try {
+        const { error: deleteError } = await supabase
+          .from("tb_animals")
+          .delete()
+          .eq("id", animal.id);
+
+        if (deleteError) {
+          throw deleteError;
+        }
+        onSave(); // To close modal and refresh list
+      } catch (err: any) {
+        setError(`Erreur lors de la suppression: ${err.message}`);
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
   const handleNewOwnerSaved = async (newOwner: Owner) => {
     await onOwnerAdded(); // Refresh the owner list in the parent
     setFormData((prev) => ({ ...prev, propr_id: newOwner.id })); // Pre-select the new owner
@@ -318,10 +415,64 @@ export default function AnimalForm({
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full">
-      <h2 className="text-gray-900 text-2xl font-bold mb-6">
-        {isEditing ? "Modifier l'animal" : "Ajouter un animal"}
-      </h2>
+    <div className="bg-white p-6 md:p-8 rounded-lg shadow-xl max-w-2xl w-full">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-gray-900 text-2xl font-bold">
+          {isEditing ? "Modifier l'animal" : "Ajouter un animal"}
+        </h2>
+        {isEditing && (
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={goToPreviousAnimal}
+              disabled={isSaving || isDeleting || isFirstAnimal}
+              className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Précédent"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+            <span className="text-gray-600 font-medium text-sm tabular-nums">
+              {currentIndex} / {ownersAnimalIds.length}
+            </span>
+            <button
+              type="button"
+              onClick={goToNextAnimal}
+              disabled={isSaving || isDeleting || isLastAnimal}
+              className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Suivant"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
+
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-2">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-gray-900">
           <div>
@@ -611,44 +762,90 @@ export default function AnimalForm({
               >
                 Motif de radiation
               </label>
-              <input
-                id="radiat_reason"
+              <select
+                id="radiat_reason_select"
                 name="radiat_reason"
-                value={formData.radiat_reason || ""}
+                value={
+                  radiationReasons.includes(formData.radiat_reason || "")
+                    ? formData.radiat_reason || ""
+                    : "Autre"
+                }
                 onChange={handleChange}
-                placeholder="Ex: Décès, Vente..."
                 className="p-1 border rounded w-full text-gray-900"
-              />
+              >
+                <option value="">Sélectionner un motif</option>
+                {radiationReasons.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+                <option value="Autre">Autre...</option>
+              </select>
+              {!radiationReasons.includes(formData.radiat_reason || "") &&
+                formData.is_radiated && (
+                  <input
+                    type="text"
+                    name="radiat_reason"
+                    value={
+                      radiationReasons.includes(animal?.radiat_reason || "")
+                        ? ""
+                        : animal?.radiat_reason || ""
+                    }
+                    onChange={handleCustomChange}
+                    placeholder="Préciser le motif"
+                    className="mt-1 p-1 border rounded w-full text-gray-900"
+                  />
+                )}
             </div>
           </div>
         )}
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <div className="flex justify-end gap-4 pt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="py-2 px-4 bg-gray-300 rounded hover:bg-gray-400"
-            disabled={isSaving}
-          >
-            Annuler
-          </button>
-          <button
-            type="submit"
-            className="py-2 px-4 bg-cyan-600 text-white rounded hover:bg-cyan-700 disabled:bg-cyan-300"
-            disabled={isSaving}
-          >
-            {isSaving ? "Enregistrement..." : "Enregistrer"}
-          </button>
+        <div className="flex justify-between items-center gap-4 pt-4">
+          <div>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                className="py-2 px-4 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-red-400"
+                disabled={isSaving || isDeleting}
+              >
+                {isDeleting ? "Suppression..." : "Supprimer"}
+              </button>
+            )}
+          </div>
+          <div className="flex items-center justify-end gap-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-2 px-4 bg-gray-300 rounded hover:bg-gray-400"
+              disabled={isSaving || isDeleting}
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              className="py-2 px-4 bg-cyan-600 text-white rounded hover:bg-cyan-700 disabled:bg-cyan-300"
+              disabled={isSaving || isDeleting}
+            >
+              {isSaving
+                ? "Enregistrement..."
+                : isEditing
+                  ? "Mettre à jour"
+                  : "Enregistrer"}
+            </button>
+          </div>
         </div>
       </form>
       {isOwnerModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <OwnerForm
-            onClose={() => setIsOwnerModalOpen(false)}
-            onSave={handleNewOwnerSaved}
-          />
+          <div className="fixed inset-0 z-50 flex justify-center items-start overflow-y-auto bg-black/50 p-4 pt-10 md:items-center md:pt-4">
+            <OwnerForm
+              onClose={() => setIsOwnerModalOpen(false)}
+              onSave={handleNewOwnerSaved}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -54,6 +54,20 @@ export default function AnimalsManage() {
   const [editingAnimal, setEditingAnimal] = useState<Partial<Animal> | null>(
     null
   );
+  const [isRadiateModalOpen, setIsRadiateModalOpen] = useState(false);
+
+  const areAllSelectedRadiated = useMemo(() => {
+    if (selectedAnimalIds.length === 0) {
+      return false;
+    }
+    const selectedAnimals = animals.filter((animal) =>
+      selectedAnimalIds.includes(animal.id)
+    );
+    if (selectedAnimals.length === 0) {
+      return false;
+    }
+    return selectedAnimals.every((animal) => animal.is_radiated);
+  }, [selectedAnimalIds, animals]);
 
   const fetchAnimals = useCallback(async () => {
     setLoading(true);
@@ -301,6 +315,34 @@ export default function AnimalsManage() {
     }
   }, [selectedAnimalIds, fetchAnimals]);
 
+  const handleBulkRadiate = async ({
+    date,
+    reason,
+  }: {
+    date: string;
+    reason: string;
+  }) => {
+    if (selectedAnimalIds.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from("tb_animals")
+        .update({
+          is_radiated: true,
+          radiat_date: date,
+          radiat_reason: reason,
+        })
+        .in("id", selectedAnimalIds);
+
+      if (error) throw error;
+
+      setSelectedAnimalIds([]); // Clear selection
+      fetchAnimals(); // Refresh data
+    } catch (err: any) {
+      setError(`Erreur lors de la radiation: ${err.message}`);
+    }
+  };
+
   return (
     <div className="flex flex-col w-screen h-screen bg-gray-50">
       <PgHeader2 />
@@ -354,6 +396,31 @@ export default function AnimalsManage() {
                   />
                 </svg>
                 Modifier
+              </button>
+              <button
+                onClick={() => setIsRadiateModalOpen(true)}
+                disabled={
+                  selectedAnimalIds.length === 0 ||
+                  filteredAnimals.length === 0 ||
+                  areAllSelectedRadiated
+                }
+                className="flex items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Radier
               </button>
               <button
                 onClick={handleDeleteClick}
@@ -494,21 +561,150 @@ export default function AnimalsManage() {
           />
         </div>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="fixed inset-0 z-50 flex justify-center items-start overflow-y-auto bg-black/50 p-4 pt-10 md:items-center md:pt-4">
             <AnimalForm
               animal={editingAnimal}
               owners={owners}
+              animals={animals}
               onOwnerAdded={fetchOwners}
               onClose={() => setIsModalOpen(false)}
               onSave={() => {
                 setIsModalOpen(false);
                 fetchAnimals(); // Refresh data after saving
               }}
+              onAnimalChange={(animal: Animal) => {
+                setEditingAnimal(animal);
+                setIsModalOpen(true);
+              }}
             />
           </div>
+        )}
+        {isRadiateModalOpen && (
+          <RadiateForm
+            count={selectedAnimalIds.length}
+            onClose={() => setIsRadiateModalOpen(false)}
+            onSave={handleBulkRadiate}
+          />
         )}
       </main>
       <PgFooter />
     </div>
   );
 }
+
+const radiationReasons = [
+  "Décès",
+  "Vente",
+  "Perdu",
+  "Retrouvé par propriétaire",
+];
+
+const RadiateForm = ({
+  count,
+  onClose,
+  onSave,
+}: {
+  count: number;
+  onClose: () => void;
+  onSave: (data: { date: string; reason: string }) => Promise<void>;
+}) => {
+  const [reason, setReason] = useState(radiationReasons[0]);
+  const [customReason, setCustomReason] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    const finalReason = reason === "Autre" ? customReason : reason;
+    if (!finalReason) {
+      // Basic validation
+      alert("Veuillez préciser un motif.");
+      setIsSaving(false);
+      return;
+    }
+    await onSave({
+      date,
+      reason: finalReason,
+    });
+    setIsSaving(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4 text-gray-800">
+          Radier {count} animal (animaux)
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label
+              htmlFor="radiate_date"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Date de radiation
+            </label>
+            <input
+              id="radiate_date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="mt-1 p-2 border rounded w-full text-gray-900"
+              required
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="radiate_reason"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Motif de radiation
+            </label>
+            <select
+              id="radiate_reason_select"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="mt-1 p-2 border rounded w-full text-gray-900"
+              required
+            >
+              {radiationReasons.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+              <option value="Autre">Autre...</option>
+            </select>
+            {reason === "Autre" && (
+              <input
+                type="text"
+                value={customReason}
+                onChange={(e) => setCustomReason(e.target.value)}
+                placeholder="Préciser le motif"
+                className="mt-2 p-2 border rounded w-full text-gray-900"
+                required
+              />
+            )}
+          </div>
+          <div className="flex justify-end gap-4 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-2 px-4 bg-gray-300 rounded hover:bg-gray-400"
+              disabled={isSaving}
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              className="py-2 px-4 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-yellow-300"
+              disabled={isSaving}
+            >
+              {isSaving ? "Enregistrement..." : "Confirmer la Radiation"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
