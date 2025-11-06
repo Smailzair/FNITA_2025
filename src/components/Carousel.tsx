@@ -50,33 +50,38 @@ export default function Carousel() {
         ))}
       </div>
 
-      {/* Buttons */}
-      <button
-        onClick={prevSlide}
-        className="absolute top-1/2 left-3 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full"
-      >
-        ❮
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute top-1/2 right-3 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full"
-      >
-        ❯
-      </button>
+      {/* Bottom Controls */}
+      <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center space-x-4">
+        {/* Prev Button */}
+        <button
+          onClick={prevSlide}
+          className="bg-black/40 hover:bg-black/60 text-white p-2 rounded-full"
+        >
+          ❮
+        </button>
 
-      {/* Dots (minimal lines) */}
-      <div className="absolute bottom-4 left-0 right-0 h-[9px] flex items-center justify-center space-x-1">
-        {images.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrent(index)}
-            className={`h-[3px] w-[20px] hover:h-[9px] hover:bg-amber-700 hover:w-[30px] transition-all cursor-pointer ${
-              index === current
-                ? "bg-white opacity-90"
-                : "bg-white/30 opacity-60"
-            }`}
-          />
-        ))}
+        {/* Dots */}
+        <div className="flex items-center justify-center space-x-1 h-[9px]">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrent(index)}
+              className={`h-[3px] w-[20px] hover:h-[9px] hover:bg-amber-700 hover:w-[30px] transition-all cursor-pointer ${
+                index === current
+                  ? "bg-white opacity-90"
+                  : "bg-white/30 opacity-60"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Next Button */}
+        <button
+          onClick={nextSlide}
+          className="bg-black/40 hover:bg-black/60 text-white p-2 rounded-full"
+        >
+          ❯
+        </button>
       </div>
     </div>
   );
