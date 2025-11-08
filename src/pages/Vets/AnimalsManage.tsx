@@ -2,25 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../../api/supabaseClient";
 import PgFooter from "../../components/PgFooter";
 import { PgHeader2 } from "../../components/PgHeader2";
+import type { Animal } from "../animal";
 import { Table, type Column } from "../../components/Table";
 import AnimalForm from "./AnimalForm"; // Corrected import path
-
-type Animal = {
-  id: string;
-  created_at: Date;
-  nme: string | null;
-  num_ident: string | null;
-  num_passport: string | null;
-  propr_id: string | null; // This will need to be joined to get owner info
-  espece: string | null;
-  race: string | null;
-  sexe: string | null;
-  niss_date: Date | null;
-  descr: string | null;
-  robe: string | null;
-  is_radiated: boolean | null;
-  owner_name?: string | null;
-};
 
 type FilterOptions = {
   espece: string;
@@ -572,7 +556,7 @@ export default function AnimalsManage() {
                 setIsModalOpen(false);
                 fetchAnimals(); // Refresh data after saving
               }}
-              onAnimalChange={(animal: Animal) => {
+              onAnimalChange={(animal) => {
                 setEditingAnimal(animal);
                 setIsModalOpen(true);
               }}

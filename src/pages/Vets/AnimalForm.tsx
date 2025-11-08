@@ -1,24 +1,8 @@
 import type { FormEvent } from "react";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../../api/supabaseClient";
+import type { Animal } from "../animal";
 import OwnerForm from "./OwnerForm";
-
-type Animal = {
-  nme: string | null;
-  num_ident: string | null;
-  num_passport: string | null;
-  propr_id: string | null;
-  espece: string | null;
-  race: string | null;
-  sexe: string | null;
-  niss_date: string | null; // Use string for input compatibility
-  robe: string | null;
-  descr: string | null;
-  is_radiated: boolean | null;
-  radiat_date: string | null;
-  radiat_reason: string | null;
-  id?: string;
-};
 
 type Owner = {
   id: string;

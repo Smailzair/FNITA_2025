@@ -27,8 +27,8 @@ export default function UserInfosUpdate() {
     fam_nme: "",
     nme: "",
     email: "",
-    phone: "",
-    adresse: "",
+    phone: "", // Changed from 'phone' to 'phone'
+    address: "", // Changed from 'adresse' to 'address'
     city: "",
     num_cni: "",
     num_anv: "",
@@ -632,10 +632,10 @@ export default function UserInfosUpdate() {
             <label className="flex w-72 items-start justify-end">
               <span className="mt-1">Adresse :</span>
               <textarea
-                name="adresse"
+                name="address"
                 className="m-1 rounded-md text-black pl-1 w-45 h-15"
                 placeholder="Adresse"
-                value={formData.adresse}
+                value={formData.address}
                 onChange={handleFormChange}
               />
             </label>

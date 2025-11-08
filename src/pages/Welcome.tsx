@@ -13,7 +13,7 @@ const ActionButton = ({
   onClick,
 }: {
   to: string;
-  icon: (props: SVGProps<SVGSVGElement>) => JSX.Element;
+  icon: (props: SVGProps<SVGSVGElement>) => React.ReactNode;
   title: string;
   subtitle: string;
   onClick?: (event: React.MouseEvent<HTMLAnchorElement>) => void;
