@@ -17,7 +17,10 @@ import NotValidatedYet from "./pages/NotValidatedYet";
 import UserInfosUpdate from "./pages/UserInfosUpdate";
 import EditUser from "./pages/Admins/EditUser";
 import UnderDevelopment from "./pages/UnderDevelopment";
-import AnimalsManage from "./pages/Vets/AnimalsManage";
+import VetsAnimalsManage from "./pages/Vets/AnimalsManage";
+import AdminAnimalsManage from "./pages/Admins/AdminAnimalsManage";
+import StatisticsPage from "./pages/Admins/StatisticsPage";
+import OwnersManage from "./pages/OwnersManage";
 
 // Define UserRole enum to avoid magic strings
 export const UserRole = {
@@ -42,7 +45,7 @@ if (container) {
           <Route path="/update_password" element={<UpdatePassword />} />
           <Route path="/userinfosupdate" element={<UserInfosUpdate />} />
           <Route path="/underdevelopment" element={<UnderDevelopment />} />
-          <Route path="/animalsmanage" element={<AnimalsManage />} />
+          <Route path="/animalsmanage" element={<VetsAnimalsManage />} />
           {/* Protected Routes */}
           <Route
             path="/admindashboard"
@@ -65,6 +68,30 @@ if (container) {
             element={
               <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
                 <EditUser />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/animals"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                <AdminAnimalsManage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stats"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                <StatisticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ownersmanage"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.Adminis, UserRole.Vet]}>
+                <OwnersManage />
               </ProtectedRoute>
             }
           />

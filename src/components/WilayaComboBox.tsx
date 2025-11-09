@@ -91,7 +91,7 @@ const WilayaComboBox: React.FC<WilayaComboBoxProps> = ({ value, onChange }) => {
         <input
           ref={inputRef}
           type="text"
-          className="text-black w-full pl-1 border rounded-l-lg"
+          className="text-gray-200 w-full pl-1 border rounded-l-lg"
           placeholder="Wilaya"
           value={value}
           onChange={(e) => {

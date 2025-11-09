@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../../api/supabaseClient";
 import type { Animal } from "../animal";
+import { useAuth } from "../../hooks/useAuth";
 import OwnerForm from "./OwnerForm";
 
 type Owner = {
@@ -157,6 +158,8 @@ type AnimalFormProps = {
 type AnimalFormData = Omit<Partial<Animal>, "niss_date" | "radiat_date"> & {
   niss_date?: string;
   radiat_date?: string;
+  qr_code_identifier?: string | null;
+  qr_code_status?: string | null;
 };
 
 export default function AnimalForm({
@@ -182,12 +185,15 @@ export default function AnimalForm({
     is_radiated: false,
     radiat_date: "", // Keep as string for the input
     radiat_reason: "",
+    qr_code_identifier: "",
+    qr_code_status: "none",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filteredRaceOptions, setFilteredRaceOptions] = useState(raceOptions);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
+  const { role } = useAuth();
 
   const isEditing = animal && animal.id;
 
@@ -703,6 +709,83 @@ export default function AnimalForm({
           placeholder="Description"
           className="text-gray-900 p-1 border rounded w-full"
         />
+
+        {isEditing && (
+          <div className="border-t border-gray-300 pt-4 mt-4">
+            <h3 className="text-lg font-medium text-gray-800 mb-2">
+              QR Code Ministériel
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 p-4 border border-gray-200 rounded-md bg-gray-50">
+              <div>
+                <label
+                  htmlFor="qr_code_status"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Statut du QR Code
+                </label>
+                <select
+                  id="qr_code_status"
+                  name="qr_code_status"
+                  value={formData.qr_code_status || "none"}
+                  onChange={handleChange}
+                  disabled={
+                    role !== "Administrateur" &&
+                    formData.qr_code_status === "available"
+                  }
+                  className="p-1 border rounded w-full text-gray-900 bg-white"
+                >
+                  <option value="none">Aucun</option>
+                  <option value="requested">Demandé</option>
+                  {/* Admin can set to available, vet cannot */}
+                  <option
+                    value="available"
+                    disabled={role !== "Administrateur"}
+                  >
+                    Disponible
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="qr_code_identifier"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Identifiant du QR Code
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="qr_code_identifier"
+                    name="qr_code_identifier"
+                    value={formData.qr_code_identifier || ""}
+                    onChange={handleChange}
+                    placeholder="ID reçu ou à générer"
+                    className="p-1 border rounded w-full text-gray-900"
+                    readOnly={role !== "Administrateur"}
+                  />
+                  {role === "Administrateur" && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          qr_code_identifier: crypto.randomUUID(),
+                          qr_code_status: "available",
+                        }))
+                      }
+                      className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-1 px-3 rounded"
+                      title="Générer un nouveau code QR"
+                    >
+                      Générer
+                    </button>
+                  )}
+                </div>
+              </div>
+              {/* You can add a QR code display component here */}
+              {/* e.g., <QRCode value={formData.qr_code_identifier} /> */}
+            </div>
+          </div>
+        )}
+
         <div className="border-t border-gray-300 pt-2">
           <label className="flex items-center space-x-3 cursor-pointer">
             <input
@@ -776,11 +859,7 @@ export default function AnimalForm({
                   <input
                     type="text"
                     name="radiat_reason"
-                    value={
-                      radiationReasons.includes(animal?.radiat_reason || "")
-                        ? ""
-                        : animal?.radiat_reason || ""
-                    }
+                    value={formData.radiat_reason || ""}
                     onChange={handleCustomChange}
                     placeholder="Préciser le motif"
                     className="mt-1 p-1 border rounded w-full text-gray-900"

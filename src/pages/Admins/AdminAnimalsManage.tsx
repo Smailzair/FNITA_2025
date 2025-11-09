@@ -4,7 +4,7 @@ import PgFooter from "../../components/PgFooter";
 import { PgHeader2 } from "../../components/PgHeader2";
 import type { Animal } from "../animal";
 import { Table, type Column } from "../../components/Table";
-import AnimalForm from "./AnimalForm"; // Corrected import path
+import AnimalForm from "../Vets/AnimalForm";
 
 type FilterOptions = {
   espece: string;
@@ -20,7 +20,7 @@ type Owner = {
   nme: string;
 };
 
-export default function AnimalsManage() {
+export default function AdminAnimalsManage() {
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [owners, setOwners] = useState<Owner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,55 +41,22 @@ export default function AnimalsManage() {
     null
   );
   const [isRadiateModalOpen, setIsRadiateModalOpen] = useState(false);
-
-  const areAllSelectedRadiated = useMemo(() => {
-    if (selectedAnimalIds.length === 0) {
-      return false;
-    }
-    const selectedAnimals = animals.filter((animal) =>
-      selectedAnimalIds.includes(animal.id)
-    );
-    if (selectedAnimals.length === 0) {
-      return false;
-    }
-    return selectedAnimals.every((animal) => animal.is_radiated);
-  }, [selectedAnimalIds, animals]);
-
-  const canRequestQrCode = useMemo(() => {
-    if (selectedAnimalIds.length === 0) {
-      return false;
-    }
-    const selectedAnimals = animals.filter((animal) =>
-      selectedAnimalIds.includes(animal.id)
-    );
-    // Can request if at least one selected animal doesn't have a QR code status of 'available' or 'requested'
-    return selectedAnimals.some(
-      (animal) =>
-        animal.qr_code_status !== "available" &&
-        animal.qr_code_status !== "requested"
-    );
-  }, [selectedAnimalIds, animals]);
+  const areAllSelectedRadiated = useMemo(
+    () =>
+      animals
+        .filter((a) => selectedAnimalIds.includes(a.id))
+        .every((a) => a.is_radiated),
+    [animals, selectedAnimalIds]
+  );
 
   const fetchAnimals = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("Utilisateur non authentifié.");
-      }
-
+      // Admin fetches ALL animals, no email filter
       const { data, error: fetchError } = await supabase
         .from("tb_animals")
-        .select(
-          `
-          *,
-          owner:propr_id ( nme )
-        `
-        )
-        .eq("created_by_email", user.email);
+        .select(`*, owner:propr_id ( nme )`);
 
       if (fetchError) {
         throw fetchError;
@@ -97,7 +64,7 @@ export default function AnimalsManage() {
 
       const processedData = (data || []).map((animal) => ({
         ...animal,
-        owner_name: animal.owner ? animal.owner.nme : null,
+        owner_name: animal.owner ? animal.owner.nme : "N/A",
         created_at: new Date(animal.created_at),
         niss_date: animal.niss_date ? new Date(animal.niss_date) : null,
       }));
@@ -165,12 +132,7 @@ export default function AnimalsManage() {
         (animal) =>
           animal.nme?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           animal.num_ident?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          animal.num_passport
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          animal.espece?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          animal.race?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          animal.robe?.toLowerCase().includes(searchTerm.toLowerCase())
+          animal.owner_name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
   }, [animals, searchTerm, filters]);
 
@@ -192,11 +154,6 @@ export default function AnimalsManage() {
     [isMultiSelectMode]
   );
 
-  const handleAddClick = () => {
-    setEditingAnimal(null);
-    setIsModalOpen(true);
-  };
-
   const handleEditClick = () => {
     if (selectedAnimalIds.length !== 1) return;
     const animalToEdit = animals.find((a) => a.id === selectedAnimalIds[0]);
@@ -216,6 +173,7 @@ export default function AnimalsManage() {
     },
     [animals]
   );
+
   const handleSelectAll = useCallback(
     (areAllSelected: boolean) => {
       setSelectedAnimalIds(
@@ -224,6 +182,179 @@ export default function AnimalsManage() {
     },
     [filteredAnimals]
   );
+
+  const handleRadiateClick = () => {
+    if (selectedAnimalIds.length === 0) return;
+
+    // If all selected are already radiated, we offer to un-radiate them.
+    if (areAllSelectedRadiated) {
+      if (
+        window.confirm(
+          `Voulez-vous marquer ${selectedAnimalIds.length} animal(aux) comme non-radié(s) ?`
+        )
+      ) {
+        handleBulkUnRadiate();
+      }
+    } else {
+      // Otherwise, open the modal to radiate them.
+      setIsRadiateModalOpen(true);
+    }
+  };
+
+  const handleBulkRadiate = async ({
+    date,
+    reason,
+  }: {
+    date: string;
+    reason: string;
+  }) => {
+    if (selectedAnimalIds.length === 0) return;
+
+    // Filter out animals that are already radiated
+    const animalsToRadiate = selectedAnimalIds.filter(
+      (id) => !animals.find((a) => a.id === id)?.is_radiated
+    );
+
+    try {
+      const { error } = await supabase
+        .from("tb_animals")
+        .update({
+          is_radiated: true,
+          radiat_date: date,
+          radiat_reason: reason,
+        })
+        .in("id", animalsToRadiate);
+
+      if (error) throw error;
+
+      alert(`${animalsToRadiate.length} animal(aux) marqué(s) comme radié(s).`);
+      setSelectedAnimalIds([]);
+      fetchAnimals();
+    } catch (err: any) {
+      setError(`Erreur lors de la radiation: ${err.message}`);
+    }
+  };
+
+  const handleBulkUnRadiate = async () => {
+    if (selectedAnimalIds.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from("tb_animals")
+        .update({
+          is_radiated: false,
+          radiat_date: null,
+          radiat_reason: null,
+        })
+        .in("id", selectedAnimalIds);
+
+      if (error) throw error;
+
+      alert(
+        `${selectedAnimalIds.length} animal(aux) marqué(s) comme non-radié(s).`
+      );
+      setSelectedAnimalIds([]);
+      fetchAnimals();
+    } catch (err: any) {
+      setError(`Erreur lors de la mise à jour: ${err.message}`);
+    }
+  };
+
+  const handleGenerateQrCode = async () => {
+    if (selectedAnimalIds.length === 0) return;
+
+    const animalsToUpdate = animals.filter((a) =>
+      selectedAnimalIds.includes(a.id)
+    );
+    const animalsWithExistingQr = animalsToUpdate.filter(
+      (a) => a.qr_code_identifier
+    );
+
+    let proceed = true;
+    if (animalsWithExistingQr.length > 0) {
+      proceed = window.confirm(
+        `Attention : ${animalsWithExistingQr.length} animal(aux) sélectionné(s) ont déjà un code QR. Voulez-vous vraiment les remplacer ?`
+      );
+    }
+
+    if (!proceed) {
+      alert("Opération annulée.");
+      return;
+    }
+
+    try {
+      const updates = animalsToUpdate.map((animal) =>
+        supabase
+          .from("tb_animals")
+          .update({
+            qr_code_identifier: crypto.randomUUID(),
+            qr_code_status: "available",
+          })
+          .eq("id", animal.id)
+      );
+
+      const results = await Promise.all(updates);
+      const errors = results.filter((res) => res.error);
+
+      if (errors.length > 0)
+        throw new Error(errors.map((e) => e.error?.message).join(", "));
+
+      alert(
+        `${animalsToUpdate.length} code(s) QR ont été généré(s) ou mis à jour avec succès.`
+      );
+      setSelectedAnimalIds([]);
+      fetchAnimals();
+    } catch (err: any) {
+      setError(`Erreur lors de la génération des codes QR: ${err.message}`);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (selectedAnimalIds.length === 0) return;
+
+    const confirmDelete = window.confirm(
+      `Êtes-vous sûr de vouloir supprimer ${selectedAnimalIds.length} animal(aux) ? Cette action est irréversible.`
+    );
+
+    if (confirmDelete) {
+      try {
+        const { error } = await supabase
+          .from("tb_animals")
+          .delete()
+          .in("id", selectedAnimalIds);
+
+        if (error) throw error;
+
+        alert("Animal(aux) supprimé(s) avec succès.");
+        setSelectedAnimalIds([]); // Clear selection
+        fetchAnimals(); // Refresh data
+      } catch (err: any) {
+        setError(`Erreur lors de la suppression: ${err.message}`);
+      }
+    }
+  };
+
+  const getStatusBadge = (status: string | null) => {
+    switch (status) {
+      case "available":
+        return "bg-green-100 text-green-800";
+      case "requested":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusText = (status: string | null) => {
+    switch (status) {
+      case "available":
+        return "Disponible";
+      case "requested":
+        return "Demandé";
+      default:
+        return "Aucun";
+    }
+  };
 
   const columns: Column<Animal>[] = useMemo(
     () => [
@@ -252,31 +383,18 @@ export default function AnimalsManage() {
         cellStyle: { color: "rgb(17 24 39)" },
       },
       {
-        header: "Race",
-        accessor: "race",
+        header: "Statut QR",
+        accessor: "qr_code_status",
         sortable: true,
-        cellStyle: { color: "rgb(17 24 39)" },
-      },
-      {
-        header: "Sexe",
-        accessor: "sexe",
-        sortable: true,
-        cellStyle: { color: "rgb(17 24 39)" },
-      },
-      {
-        header: "Date de Naissance",
-        accessor: "niss_date",
-        sortable: true,
-        cellStyle: { color: "rgb(17 24 39)" },
-        render: (animal) =>
-          animal.niss_date && !isNaN(animal.niss_date.getTime())
-            ? animal.niss_date.toLocaleDateString("fr-FR")
-            : "N/A",
-      },
-      {
-        header: "Robe",
-        accessor: "robe",
-        cellStyle: { color: "rgb(17 24 39)" },
+        render: (animal) => (
+          <span
+            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(
+              animal.qr_code_status
+            )}`}
+          >
+            {getStatusText(animal.qr_code_status)}
+          </span>
+        ),
       },
       {
         header: "Radié",
@@ -298,141 +416,20 @@ export default function AnimalsManage() {
     []
   );
 
-  const handleDeleteClick = useCallback(async () => {
-    if (selectedAnimalIds.length === 0) return;
-
-    const confirmDelete = window.confirm(
-      `Êtes-vous sûr de vouloir supprimer ${selectedAnimalIds.length} animal (animaux) ? Cette action est irréversible.`
-    );
-
-    if (confirmDelete) {
-      try {
-        const { error } = await supabase
-          .from("tb_animals")
-          .delete()
-          .in("id", selectedAnimalIds);
-
-        if (error) throw error;
-
-        setSelectedAnimalIds([]); // Clear selection
-        fetchAnimals(); // Refresh data
-      } catch (err: any) {
-        setError(`Erreur lors de la suppression: ${err.message}`);
-      }
-    }
-  }, [selectedAnimalIds, fetchAnimals]);
-
-  const handleBulkRadiate = async ({
-    date,
-    reason,
-  }: {
-    date: string;
-    reason: string;
-  }) => {
-    if (selectedAnimalIds.length === 0) return;
-
-    try {
-      const { error } = await supabase
-        .from("tb_animals")
-        .update({
-          is_radiated: true,
-          radiat_date: date,
-          radiat_reason: reason,
-        })
-        .in("id", selectedAnimalIds);
-
-      if (error) throw error;
-
-      setSelectedAnimalIds([]); // Clear selection
-      fetchAnimals(); // Refresh data
-    } catch (err: any) {
-      setError(`Erreur lors de la radiation: ${err.message}`);
-    }
-  };
-
-  const handleRequestQrCode = async () => {
-    if (selectedAnimalIds.length === 0) return;
-
-    const confirmRequest = window.confirm(
-      `Êtes-vous sûr de vouloir demander des QR codes pour ${selectedAnimalIds.length} animal(aux) ?`
-    );
-
-    if (confirmRequest) {
-      try {
-        // Filter out animals that already have a QR code requested or available
-        const animalsToRequest = animals
-          .filter((a) => selectedAnimalIds.includes(a.id))
-          .filter(
-            (a) =>
-              a.qr_code_status !== "requested" &&
-              a.qr_code_status !== "available"
-          )
-          .map((a) => a.id);
-
-        if (animalsToRequest.length === 0) {
-          alert(
-            "Tous les animaux sélectionnés ont déjà un QR code demandé ou disponible."
-          );
-          return;
-        }
-
-        const { error } = await supabase
-          .from("tb_animals")
-          .update({
-            qr_code_status: "requested",
-            qr_code_request_date: new Date().toISOString(),
-          })
-          .in("id", animalsToRequest);
-
-        if (error) throw error;
-
-        alert(
-          `${animalsToRequest.length} demande(s) de QR code ont été enregistrées avec succès.`
-        );
-        setSelectedAnimalIds([]); // Clear selection
-        fetchAnimals(); // Refresh data
-      } catch (err: any) {
-        setError(`Erreur lors de la demande de QR code: ${err.message}`);
-      }
-    }
-  };
-
   return (
     <div className="flex flex-col w-screen h-screen bg-gray-50">
       <PgHeader2 />
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-800 mb-8">
-            Gestion des Animaux
+            Gestion des Animaux (Administration)
           </h1>
 
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-4 items-center">
               <button
-                onClick={handleAddClick}
-                className="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                Ajouter un Animal
-              </button>
-              <button
                 onClick={handleEditClick}
-                disabled={
-                  selectedAnimalIds.length !== 1 || filteredAnimals.length === 0
-                }
+                disabled={selectedAnimalIds.length !== 1}
                 className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 <svg
@@ -452,13 +449,13 @@ export default function AnimalsManage() {
                 Modifier
               </button>
               <button
-                onClick={() => setIsRadiateModalOpen(true)} // This will now open the form
-                disabled={
-                  selectedAnimalIds.length === 0 ||
-                  filteredAnimals.length === 0 ||
-                  areAllSelectedRadiated
-                }
-                className="flex items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
+                onClick={handleRadiateClick}
+                disabled={selectedAnimalIds.length === 0}
+                className={`flex items-center justify-center font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap ${
+                  areAllSelectedRadiated && selectedAnimalIds.length > 0
+                    ? "bg-green-500 hover:bg-green-600 text-white"
+                    : "bg-yellow-500 hover:bg-yellow-600 text-white"
+                }`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -474,13 +471,13 @@ export default function AnimalsManage() {
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
                 </svg>
-                Radier
+                {areAllSelectedRadiated && selectedAnimalIds.length > 0
+                  ? "Marquer Non-Radié"
+                  : "Radier"}
               </button>
               <button
-                onClick={handleDeleteClick}
-                disabled={
-                  selectedAnimalIds.length === 0 || filteredAnimals.length === 0
-                }
+                onClick={() => void handleDelete()}
+                disabled={selectedAnimalIds.length === 0}
                 className="flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 <svg
@@ -500,9 +497,9 @@ export default function AnimalsManage() {
                 Supprimer
               </button>
               <button
-                onClick={() => void handleRequestQrCode()}
-                disabled={!canRequestQrCode}
-                className="flex items-center justify-center bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
+                onClick={() => void handleGenerateQrCode()}
+                disabled={selectedAnimalIds.length === 0}
+                className="flex items-center justify-center bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -512,32 +509,17 @@ export default function AnimalsManage() {
                 >
                   <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 21h8v-8h-8v8zm2-6h4v4h-4v-4z" />
                 </svg>
-                Demander QR Code
+                Générer/Changer Code QR
               </button>
             </div>
             <button
               onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
-              className={`flex items-center justify-center font-semibold py-2 px-5 rounded-full transition-colors duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed ${
+              className={`flex items-center justify-center font-semibold py-2 px-5 rounded-full transition-colors duration-200 ${
                 isMultiSelectMode
                   ? "bg-cyan-600 text-white"
                   : "bg-gray-300 hover:bg-gray-400 text-gray-800"
               }`}
-              disabled={filteredAnimals.length === 0}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
               Sélection Multiple
             </button>
           </div>
@@ -545,7 +527,7 @@ export default function AnimalsManage() {
           <div className="mb-6 flex flex-wrap gap-4">
             <input
               type="text"
-              placeholder="Rechercher..."
+              placeholder="Rechercher par nom, ID, propriétaire..."
               className="flex-grow text-black p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -577,27 +559,6 @@ export default function AnimalsManage() {
                   {espece}
                 </option>
               ))}
-            </select>
-            <select
-              value={filters.race}
-              onChange={(e) => setFilters({ ...filters, race: e.target.value })}
-              className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
-            >
-              <option value="all">Toutes les races</option>
-              {races.map((race) => (
-                <option key={race} value={race}>
-                  {race}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filters.sexe}
-              onChange={(e) => setFilters({ ...filters, sexe: e.target.value })}
-              className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
-            >
-              <option value="all">Tous les sexes</option>
-              <option value="Mâle">Mâle</option>
-              <option value="Femelle">Femelle</option>
             </select>
             <select
               value={filters.is_radiated}
@@ -658,7 +619,7 @@ export default function AnimalsManage() {
               onClose={() => setIsModalOpen(false)}
               onSave={() => {
                 setIsModalOpen(false);
-                fetchAnimals(); // Refresh data after saving
+                fetchAnimals();
               }}
               onAnimalChange={(animal) => {
                 setEditingAnimal(animal);
@@ -669,7 +630,11 @@ export default function AnimalsManage() {
         )}
         {isRadiateModalOpen && (
           <RadiateForm
-            count={selectedAnimalIds.length}
+            count={
+              selectedAnimalIds.filter(
+                (id) => !animals.find((a) => a.id === id)?.is_radiated
+              ).length
+            }
             onClose={() => setIsRadiateModalOpen(false)}
             onSave={handleBulkRadiate}
           />
@@ -685,6 +650,7 @@ const radiationReasons = [
   "Vente",
   "Perdu",
   "Retrouvé par propriétaire",
+  "Action administrative",
 ];
 
 const RadiateForm = ({
@@ -706,7 +672,6 @@ const RadiateForm = ({
     setIsSaving(true);
     const finalReason = reason === "Autre" ? customReason : reason;
     if (!finalReason) {
-      // Basic validation
       alert("Veuillez préciser un motif.");
       setIsSaving(false);
       return;

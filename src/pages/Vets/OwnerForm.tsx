@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { supabase } from "../../api/supabaseClient";
 import WilayaComboBox from "../../components/WilayaComboBox";
+import React, { useEffect } from "react";
 
 type Owner = {
+  created_at: string;
   id: string;
   sexe: string;
   fam_nme: string;
@@ -18,11 +20,12 @@ type Owner = {
 };
 
 type OwnerFormProps = {
-  onSave: (newOwner: Owner) => void;
+  owner?: Partial<Owner> | null;
+  onSave: (owner: Owner) => void;
   onClose: () => void;
 };
 
-export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
+export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
   const [formData, setFormData] = useState<Partial<Omit<Owner, "id">>>({
     sexe: "Homme",
     fam_nme: "",
@@ -39,6 +42,14 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isEditing = owner && owner.id;
+
+  useEffect(() => {
+    if (isEditing) {
+      setFormData(owner);
+    }
+  }, [owner, isEditing]);
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -53,27 +64,40 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
     setIsSaving(true);
     setError(null);
 
+    let savedOwner: Owner | null = null;
+
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      const submissionData = {
-        ...formData,
-        created_by_email: user?.email,
-      };
-
-      const { data, error: insertError } = await supabase
-        .from("tb_props")
-        .insert(submissionData)
-        .select()
-        .single();
-
-      if (insertError) {
-        throw insertError;
+      if (isEditing) {
+        // Update existing owner
+        const { id, created_at, ...updateData } = formData as Owner;
+        const { data, error: updateError } = await supabase
+          .from("tb_props")
+          .update(updateData)
+          .eq("id", owner.id as string)
+          .select()
+          .single();
+        if (updateError) throw updateError;
+        savedOwner = data;
+      } else {
+        // Create new owner
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        const submissionData = { ...formData, created_by_email: user?.email };
+        const { data, error: insertError } = await supabase
+          .from("tb_props")
+          .insert(submissionData)
+          .select()
+          .single();
+        if (insertError) throw insertError;
+        savedOwner = data;
       }
 
-      onSave(data);
+      if (savedOwner) {
+        onSave(savedOwner);
+      } else {
+        throw new Error("L'opération a échoué, aucune donnée retournée.");
+      }
     } catch (err: any) {
       setError(`Erreur: ${err.message}`);
     } finally {
@@ -84,10 +108,10 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
   return (
     <div className="bg-gray-700 p-8 rounded-lg shadow-xl max-w-2xl w-full border border-cyan-500">
       <h2 className="text-white text-2xl font-bold mb-6">
-        Ajouter un Propriétaire
+        {isEditing ? "Modifier le Propriétaire" : "Ajouter un Propriétaire"}
       </h2>
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-gray-900">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
           <div>
             <label
               htmlFor="fam_nme"
@@ -101,7 +125,7 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
               value={formData.fam_nme || ""}
               onChange={handleChange}
               placeholder="Nom de famille"
-              className="p-1 border rounded w-full"
+              className="p-1 border rounded w-full text-gray-200"
               required
             />
           </div>
@@ -118,7 +142,7 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
               value={formData.nme || ""}
               onChange={handleChange}
               placeholder="Prénom"
-              className="p-1 border rounded w-full"
+              className="p-1 border rounded w-full text-gray-200"
               required
             />
           </div>
@@ -134,7 +158,7 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
               name="sexe"
               value={formData.sexe || ""}
               onChange={handleChange}
-              className="p-1 border rounded w-full text-gray-900"
+              className="p-1 border rounded w-full text-gray-200"
             >
               <option value="Homme">Homme</option>
               <option value="Femme">Femme</option>
@@ -153,7 +177,7 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
               value={formData.num_cni || ""}
               onChange={handleChange}
               placeholder="N° CNI"
-              className="p-1 border rounded w-full"
+              className="p-1 border rounded w-full text-gray-900"
             />
           </div>
           <div>
@@ -170,7 +194,7 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
               value={formData.email || ""}
               onChange={handleChange}
               placeholder="Email"
-              className="p-1 border rounded w-full"
+              className="p-1 border rounded w-full text-gray-900"
             />
           </div>
           <div>
@@ -187,7 +211,7 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
               value={formData.tel || ""}
               onChange={handleChange}
               placeholder="Téléphone"
-              className="p-1 border rounded w-full"
+              className="p-1 border rounded w-full text-gray-900"
             />
           </div>
           <div>
@@ -212,7 +236,7 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
               value={formData.city || ""}
               onChange={handleChange}
               placeholder="Cité"
-              className="p-1 border rounded w-full"
+              className="p-1 border rounded w-full text-gray-900"
             />
           </div>
           <div>
@@ -228,7 +252,7 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
               value={formData.code_postal || ""}
               onChange={handleChange}
               placeholder="Code Postal"
-              className="p-1 border rounded w-full"
+              className="p-1 border rounded w-full text-gray-900"
             />
           </div>
         </div>
@@ -244,7 +268,7 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
           value={formData.adresse || ""}
           onChange={handleChange}
           placeholder="Adresse"
-          className="text-gray-900 p-1 border rounded w-full"
+          className="p-1 border rounded w-full text-gray-900"
         />
         <label
           htmlFor="descr"
@@ -258,7 +282,7 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
           value={formData.descr || ""}
           onChange={handleChange}
           placeholder="Description"
-          className="text-gray-900 p-1 border rounded w-full"
+          className="p-1 border rounded w-full text-gray-900"
         />
 
         {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -277,7 +301,11 @@ export default function OwnerForm({ onSave, onClose }: OwnerFormProps) {
             className="py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-green-300"
             disabled={isSaving}
           >
-            {isSaving ? "Enregistrement..." : "Enregistrer"}
+            {isSaving
+              ? "Enregistrement..."
+              : isEditing
+                ? "Mettre à jour"
+                : "Enregistrer"}
           </button>
         </div>
       </form>
