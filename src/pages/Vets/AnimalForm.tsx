@@ -153,6 +153,12 @@ type AnimalFormProps = {
   onAnimalChange: (animal: Animal) => void;
 };
 
+// Create a specific type for the form data to handle date strings
+type AnimalFormData = Omit<Partial<Animal>, "niss_date" | "radiat_date"> & {
+  niss_date?: string;
+  radiat_date?: string;
+};
+
 export default function AnimalForm({
   animal,
   owners,
@@ -162,7 +168,7 @@ export default function AnimalForm({
   onClose,
   onAnimalChange,
 }: AnimalFormProps) {
-  const [formData, setFormData] = useState<Partial<Animal>>({
+  const [formData, setFormData] = useState<AnimalFormData>({
     nme: "",
     num_ident: "",
     num_passport: "",
@@ -170,11 +176,11 @@ export default function AnimalForm({
     espece: "",
     race: "",
     sexe: "Mâle",
-    niss_date: "",
+    niss_date: "", // Keep as string for the input
     robe: "",
     descr: "",
     is_radiated: false,
-    radiat_date: "",
+    radiat_date: "", // Keep as string for the input
     radiat_reason: "",
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -237,11 +243,11 @@ export default function AnimalForm({
   useEffect(() => {
     if (animal) {
       // Format date for input type="date"
-      const formattedDate = animal.niss_date
+      const formattedNissDate = animal.niss_date
         ? new Date(animal.niss_date).toISOString().split("T")[0]
         : "";
-      const formattedRadiatDate = (animal as any).radiat_date
-        ? new Date((animal as any).radiat_date).toISOString().split("T")[0]
+      const formattedRadiatDate = animal.radiat_date
+        ? new Date(animal.radiat_date).toISOString().split("T")[0]
         : "";
 
       // Check if espece/race are custom values
@@ -255,8 +261,8 @@ export default function AnimalForm({
 
       setFormData({
         ...animal,
-        niss_date: formattedDate,
-        radiat_date: formattedRadiatDate,
+        niss_date: formattedNissDate,
+        radiat_date: formattedRadiatDate, // This will be a string
         // If the value is custom, set the dropdown to 'Autre'
         // The text input will then be populated by the value from the `animal` object spread
         espece: isCustomEspece ? "Autre" : animal.espece,
@@ -651,7 +657,7 @@ export default function AnimalForm({
                 id="niss_date"
                 name="niss_date"
                 type="date"
-                value={formData.niss_date || ""}
+                value={(formData.niss_date as string) || ""}
                 onChange={handleChange}
                 className="p-1 border rounded w-full text-gray-900 appearance-none"
               />

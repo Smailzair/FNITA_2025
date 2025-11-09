@@ -8,7 +8,7 @@ export type Animal = {
   espece: string | null;
   race: string | null;
   sexe: string | null;
-  niss_date: string | null; // Keep as string for form compatibility
+  niss_date: Date | null;
   robe: string | null;
   descr: string | null;
   is_radiated: boolean | null;

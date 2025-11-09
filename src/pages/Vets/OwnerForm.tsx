@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { supabase } from "../../api/supabaseClient";
 import WilayaComboBox from "../../components/WilayaComboBox";
 

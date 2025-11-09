@@ -246,7 +246,7 @@ export default function AnimalsManage() {
         sortable: true,
         cellStyle: { color: "rgb(17 24 39)" },
         render: (animal) =>
-          animal.niss_date
+          animal.niss_date && !isNaN(animal.niss_date.getTime())
             ? animal.niss_date.toLocaleDateString("fr-FR")
             : "N/A",
       },
