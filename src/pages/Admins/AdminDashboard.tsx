@@ -36,6 +36,12 @@ export default function AdminDashboard() {
               title="Statistiques"
               description="Visualiser les statistiques et les rapports d'activité."
             />
+            <DashboardButton
+              to="/admin/declarations"
+              icon={<ReportDiseaseIcon />}
+              title="Gestion des Déclarations"
+              description="Suivre et gérer les déclarations de maladies."
+            />
           </div>
         </div>
       </main>
@@ -80,5 +86,11 @@ const AnimalIcon = () => (
 const OwnerIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
     <path d="M16 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14c-3.87 0-7 1.79-7 4v2h14v-2c0-2.21-3.13-4-7-4z" />
+  </svg>
+);
+
+const ReportDiseaseIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
   </svg>
 );

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../api/supabaseClient";
 import PgFooter from "../components/PgFooter";
 import { PgHeader2 } from "../components/PgHeader2";
+import { UserRole } from "../main";
 import { Table, type Column } from "../components/Table";
 import OwnerForm from "./Vets/OwnerForm"; // Reusing the owner form
 
@@ -30,14 +31,38 @@ export default function OwnersManage() {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOwner, setEditingOwner] = useState<Partial<Owner> | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    role: string;
+    email: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        setCurrentUser({
+          role: session.user.user_metadata.type,
+          email: session.user.email || "",
+        });
+      }
+    };
+    void getCurrentUser();
+  }, []);
 
   const fetchOwners = useCallback(async () => {
+    if (!currentUser) return; // Don't fetch until user is loaded
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("tb_props")
-        .select("*");
+      let query = supabase.from("tb_props").select("*");
+
+      if (currentUser.role === UserRole.Vet) {
+        query = query.eq("created_by_email", currentUser.email);
+      }
+
+      const { data, error: fetchError } = await query;
 
       if (fetchError) {
         throw fetchError;
@@ -54,11 +79,11 @@ export default function OwnersManage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchOwners();
-  }, [fetchOwners]);
+  }, [fetchOwners, currentUser]);
 
   const filteredOwners = useMemo(() => {
     return owners.filter(

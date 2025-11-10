@@ -8,7 +8,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import EmailConfirm from "./pages/email_confirm";
 import UpdatePassword from "./pages/update_password";
-import ManageVets from "./pages/Admins/ManageVets";
+import ManageUsers from "./pages/Admins/ManageUsers";
 import AdminDashboard from "./pages/Admins/AdminDashboard";
 import ProtectedRoute from "./ProtectedRoute";
 import VetsDashboard from "./pages/Vets/VetsDashboard";
@@ -21,6 +21,8 @@ import VetsAnimalsManage from "./pages/Vets/AnimalsManage";
 import AdminAnimalsManage from "./pages/Admins/AdminAnimalsManage";
 import StatisticsPage from "./pages/Admins/StatisticsPage";
 import OwnersManage from "./pages/OwnersManage";
+import DeclareDiseasePage from "./pages/Vets/DeclareDiseasePage";
+import ManageDeclarations from "./pages/Admins/ManageDeclarations";
 
 // Define UserRole enum to avoid magic strings
 export const UserRole = {
@@ -59,7 +61,7 @@ if (container) {
             path="/managevets"
             element={
               <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
-                <ManageVets />
+                <ManageUsers />
               </ProtectedRoute>
             }
           />
@@ -76,6 +78,14 @@ if (container) {
             element={
               <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
                 <AdminAnimalsManage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/declarations"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                <ManageDeclarations />
               </ProtectedRoute>
             }
           />
@@ -100,6 +110,14 @@ if (container) {
             element={
               <ProtectedRoute allowedRoles={[UserRole.Adminis, UserRole.Vet]}>
                 <VetsDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vets/declarer-maladie"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.Vet]}>
+                <DeclareDiseasePage />
               </ProtectedRoute>
             }
           />

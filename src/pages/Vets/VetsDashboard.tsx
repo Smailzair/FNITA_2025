@@ -42,24 +42,6 @@ export default function VetsDashboard() {
                 description="Consulter et gérer les fiches des propriétaires."
               />
               <DashboardButton
-                to="/vets/vaccinations"
-                icon={<VaccineIcon />}
-                title="Carnets de Vaccination"
-                description="Gérer les historiques de vaccination et les rappels."
-              />
-              <DashboardButton
-                to="/vets/rendez-vous"
-                icon={<CalendarIcon />}
-                title="Visites & Rendez-vous"
-                description="Planifier et gérer le calendrier des consultations."
-              />
-              <DashboardButton
-                to="/vets/laboratoire"
-                icon={<LabIcon />}
-                title="Gestion de Laboratoire"
-                description="Suivre les analyses et les résultats de laboratoire."
-              />
-              <DashboardButton
                 to="/vets/declarer-maladie"
                 icon={<ReportDiseaseIcon />}
                 title="Déclarer une Maladie"
@@ -76,12 +58,6 @@ export default function VetsDashboard() {
                 icon={<FoundAnimalIcon />}
                 title="Signaler un Animal Trouvé"
                 description="Enregistrer un animal trouvé pour retrouver son propriétaire."
-              />
-              <DashboardButton
-                to="/vets/stock"
-                icon={<StockIcon />}
-                title="Gestion des Stocks"
-                description="Suivre les médicaments et le matériel disponible."
               />
             </div>
           </div>
@@ -106,24 +82,6 @@ const OwnerIcon = () => (
   </svg>
 );
 
-const VaccineIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M22 5.72l-4.6-3.86-1.29 1.53 4.6 3.86L22 5.72zM5.88 21l-1.06-1.06 14.14-14.14 1.06 1.06L5.88 21zM12 2c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-  </svg>
-);
-
-const CalendarIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z" />
-  </svg>
-);
-
-const LabIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M16.5 8c-1.54 0-2.94.81-3.75 2.03C11.94 8.81 10.54 8 9 8c-2.21 0-4 1.79-4 4s1.79 4 4 4c1.54 0 2.94-.81 3.75-2.03C13.56 17.19 14.96 18 16.5 18c2.21 0 4-1.79 4-4s-1.79-4-4-4zm-7.5 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm7.5 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
-  </svg>
-);
-
 const ReportDiseaseIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
     <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
@@ -139,11 +97,5 @@ const LostAnimalIcon = () => (
 const FoundAnimalIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 13c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
-  </svg>
-);
-
-const StockIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H9v-4h6v4zm0-6H9V8h6v4z" />
   </svg>
 );

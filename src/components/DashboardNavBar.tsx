@@ -47,6 +47,36 @@ const StatsIcon = () => (
   </svg>
 );
 
+const OwnerIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14c-3.87 0-7 1.79-7 4v2h14v-2c0-2.21-3.13-4-7-4z" />
+  </svg>
+);
+
+const LabIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16.5 8c-1.54 0-2.94.81-3.75 2.03C11.94 8.81 10.54 8 9 8c-2.21 0-4 1.79-4 4s1.79 4 4 4c1.54 0 2.94-.81 3.75-2.03C13.56 17.19 14.96 18 16.5 18c2.21 0 4-1.79 4-4s-1.79-4-4-4zm-7.5 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm7.5 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
+  </svg>
+);
+
+const LostAnimalIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+  </svg>
+);
+
+const FoundAnimalIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 13c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
+  </svg>
+);
+
+const StockIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H9v-4h6v4zm0-6H9V8h6v4z" />
+  </svg>
+);
+
 const MenuIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
     <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
@@ -56,18 +86,37 @@ const MenuIcon = () => (
 const adminLinks = [
   { to: "/admindashboard", title: "Tableau de Bord", icon: <HomeIcon /> },
   { to: "/managevets", title: "Gestion des Utilisateurs", icon: <UsersIcon /> },
+  { to: "/admin/animals", title: "Gestion des Animaux", icon: <AnimalIcon /> },
+  {
+    to: "/ownersmanage",
+    title: "Gestion des Propriétaires",
+    icon: <OwnerIcon />,
+  },
   { to: "/stats", title: "Statistiques", icon: <StatsIcon /> },
 ];
 
 const vetLinks = [
   { to: "/vetsdashboard", title: "Tableau de Bord", icon: <HomeIcon /> },
   { to: "/animalsmanage", title: "Animaux", icon: <AnimalIcon /> },
-  { to: "/vets/vaccinations", title: "Vaccinations", icon: <VaccineIcon /> },
-  { to: "/vets/rendez-vous", title: "Rendez-vous", icon: <CalendarIcon /> },
+  {
+    to: "/ownersmanage",
+    title: "Gestion des Propriétaires",
+    icon: <OwnerIcon />,
+  },
   {
     to: "/vets/declarer-maladie",
     title: "Déclarer Maladie",
     icon: <ReportDiseaseIcon />,
+  },
+  {
+    to: "/vets/animal-perdu",
+    title: "Signaler un Animal Perdu",
+    icon: <LostAnimalIcon />,
+  },
+  {
+    to: "/vets/animal-trouve",
+    title: "Signaler un Animal Trouvé",
+    icon: <FoundAnimalIcon />,
   },
 ];
 
