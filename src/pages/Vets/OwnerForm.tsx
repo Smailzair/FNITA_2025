@@ -1,11 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { supabase } from "../../api/supabaseClient";
-import { UserRole } from "../../main";
 import WilayaComboBox from "../../components/WilayaComboBox";
 import React, { useEffect } from "react";
 
 type Owner = {
-  created_at: string;
+  created_at: Date;
   id: string;
   sexe: string;
   fam_nme: string;
@@ -42,10 +41,6 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<{
-    role: string;
-    email: string;
-  } | null>(null);
 
   const isEditing = owner && owner.id;
 
@@ -54,21 +49,6 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
       setFormData(owner);
     }
   }, [owner, isEditing]);
-
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        setCurrentUser({
-          role: session.user.user_metadata.type,
-          email: session.user.email || "",
-        });
-      }
-    };
-    void getCurrentUser();
-  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -240,7 +220,6 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
             </label>
             <WilayaComboBox
               value={formData.wilaya || ""}
-              isVet={currentUser?.role === UserRole.Vet}
               onChange={(val) => setFormData((p) => ({ ...p, wilaya: val }))}
             />
           </div>

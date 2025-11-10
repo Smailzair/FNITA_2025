@@ -101,13 +101,6 @@ export default function AdminAnimalsManage() {
     return [...new Set(allEspeces)];
   }, [animals]);
 
-  const races = useMemo(() => {
-    const allRaces = animals
-      .map((animal) => animal.race)
-      .filter((r): r is string => r !== null && r !== "");
-    return [...new Set(allRaces)];
-  }, [animals]);
-
   const filteredAnimals = useMemo(() => {
     return animals
       .filter((animal) => {

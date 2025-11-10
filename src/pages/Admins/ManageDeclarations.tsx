@@ -237,6 +237,7 @@ export default function ManageDeclarations() {
       },
       {
         header: "Actions",
+        accessor: "id", // Add a unique accessor
         render: (d) => (
           <button
             onClick={(e) => {
@@ -310,25 +311,47 @@ export default function ManageDeclarations() {
                 <option value="Confirmed">Confirmé</option>
                 <option value="Resolved">Résolu</option>
               </select>
-              <div className="flex items-center gap-2">
-                <input
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) =>
-                    setFilters({ ...filters, startDate: e.target.value })
-                  }
-                  className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-gray-900"
-                />
+              <div className="flex items-center gap-2 lg:col-span-2">
+                <div className="relative w-full">
+                  <input
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) =>
+                      setFilters({ ...filters, startDate: e.target.value })
+                    }
+                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-gray-900 appearance-none"
+                  />
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <svg
+                      className="fill-current h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9 11H5V13H9V11ZM15 11H11V13H15V11ZM19 4H18V2H16V4H8V2H6V4H5C3.89 4 3.01 4.9 3.01 6L3 20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V9H19V20Z" />
+                    </svg>
+                  </div>
+                </div>
                 <span className="text-gray-500">à</span>
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  min={filters.startDate}
-                  onChange={(e) =>
-                    setFilters({ ...filters, endDate: e.target.value })
-                  }
-                  className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-gray-900"
-                />
+                <div className="relative w-full">
+                  <input
+                    type="date"
+                    value={filters.endDate}
+                    min={filters.startDate}
+                    onChange={(e) =>
+                      setFilters({ ...filters, endDate: e.target.value })
+                    }
+                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-gray-900 appearance-none"
+                  />
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <svg
+                      className="fill-current h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9 11H5V13H9V11ZM15 11H11V13H15V11ZM19 4H18V2H16V4H8V2H6V4H5C3.89 4 3.01 4.9 3.01 6L3 20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V9H19V20Z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
