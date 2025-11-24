@@ -277,6 +277,30 @@ export default function Login() {
               )}
             </button>
           </div>
+          <div className="border-t-1 border-gray-400 w-[80%] m-2 mt-5" />
+          <Link to={"/Register"}>
+            <button
+              type="button"
+              className="relative flex flex-row justify-center items-center rounded-full pr-2 bg-gray-700 p-1 text-gray-400 hover:text-white hover:outline-2 hover:outline-gray-800"
+            >
+              <svg
+                className="w-9 h-9 mr-2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1}
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z"
+                />
+              </svg>
+              Ajouter un compte
+            </button>
+          </Link>
         </form>
       </div>
       <PgFooter />

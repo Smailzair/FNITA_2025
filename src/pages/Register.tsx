@@ -135,7 +135,7 @@ export default function Register() {
       <PgHeader />
       <div className="flex justify-center items-center h-[calc(100vh-7.25rem)] w-full">
         <form
-          className="bg-stone-500 flex flex-row flex-wrap items-center justify-center p-2 rounded-lg min-w-80 max-w-2xl"
+          className="relative bg-stone-500 flex flex-row flex-wrap items-center justify-center p-2 rounded-lg min-w-80 max-w-2xl"
           onSubmit={HandleSubmit}
           onChange={handleFormChange}
           // enable browser autofill where possible
@@ -143,6 +143,22 @@ export default function Register() {
         >
           {!isSmallScreen && (
             <>
+              <button
+                type="button"
+                className="absolute top-2 left-2 rounded-full bg-gray-700 p-1 text-gray-400 hover:text-white hover:outline-3 hover:outline-gray-800"
+                onClick={() => navigate(-1)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  height="24px"
+                  viewBox="0 0 24 24"
+                  width="24px"
+                  fill="#e3e3e3"
+                >
+                  <path d="M0 0h24v24H0V0z" fill="none" opacity=".87" />
+                  <path d="M17.51 3.87L15.73 2.1 5.84 12l9.9 9.9 1.77-1.77L9.38 12l8.13-8.13z" />
+                </svg>
+              </button>
               <h1 className="text-2xl font-bold text-slate-300 text-center items-center w-fit">
                 Inscription
               </h1>

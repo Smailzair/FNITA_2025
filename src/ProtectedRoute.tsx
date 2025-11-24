@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, type UserRole } from "./hooks/useAuth";
+import { authState } from "./api/auth-state";
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
@@ -24,6 +25,11 @@ export default function ProtectedRoute({
 
   if (!user) {
     // User not logged in, redirect to login page
+    // UNLESS a manual logout is in progress.
+    // If logging out, allow navigation to the public homepage.
+    if (authState.isLoggingOut) {
+      return <Navigate to="/" replace />;
+    }
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

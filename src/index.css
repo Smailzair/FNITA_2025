@@ -119,3 +119,18 @@ textarea:focus {
   background: #efefef;
   text-align: center;
 }
+
+@font-face {
+  font-family: ScienceGothic-Light;
+  src: url("../src/assets/fonts/ScienceGothic-Light.ttf");
+}
+
+@font-face {
+  font-family: ScienceGothic-ExtraLight;
+  src: url("../src/assets/fonts/ScienceGothic-ExtraLight.ttf");
+}
+
+@theme {
+  --font-ScienceGothic-Light: ScienceGothic-Light;
+  --font-ScienceGothic-ExtraLight: ScienceGothic-ExtraLight;
+}

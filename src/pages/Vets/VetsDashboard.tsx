@@ -30,16 +30,16 @@ export default function VetsDashboard() {
             </h1>
             <div className="flex flex-wrap gap-8 justify-center md:justify-start">
               <DashboardButton
-                to="/animalsmanage"
-                icon={<AnimalIcon />}
-                title="Gestion des Animaux"
-                description="Consulter, ajouter ou modifier les fiches des animaux."
-              />
-              <DashboardButton
                 to="/ownersmanage"
                 icon={<OwnerIcon />}
                 title="Gestion des Propriétaires"
                 description="Consulter et gérer les fiches des propriétaires."
+              />
+              <DashboardButton
+                to="/animalsmanage"
+                icon={<AnimalIcon />}
+                title="Gestion des Animaux"
+                description="Consulter, ajouter ou modifier les fiches des animaux."
               />
               <DashboardButton
                 to="/vets/declarer-maladie"

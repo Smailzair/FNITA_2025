@@ -73,12 +73,12 @@ const adminLinks = [
 
 const vetLinks = [
   { to: "/vetsdashboard", title: "Tableau de Bord", icon: <HomeIcon /> },
-  { to: "/animalsmanage", title: "Animaux", icon: <AnimalIcon /> },
   {
     to: "/ownersmanage",
     title: "Gestion des Propriétaires",
     icon: <OwnerIcon />,
   },
+  { to: "/animalsmanage", title: "Animaux", icon: <AnimalIcon /> },
   {
     to: "/vets/declarer-maladie",
     title: "Déclarer Maladie",

@@ -1,9 +1,10 @@
-import { Fragment, type SVGProps, useState } from "react";
+import { Fragment, type SVGProps, useState, useEffect } from "react";
 // import { ImgSlider } from "../components/ImgSlider";
 import { PgHeader } from "../components/PgHeader";
 import Carousel from "../components/Carousel";
 import PgFooter from "../components/PgFooter";
 import { Link } from "react-router-dom";
+import { authState } from "../api/auth-state";
 
 const ActionButton = ({
   to,
@@ -42,7 +43,7 @@ const ActionButton = ({
         </div>
       </div>
       {/* Back Face */}
-      <div className="hidden md:flex absolute items-center justify-center w-full h-full p-3 bg-cyan-700 text-white rounded-lg shadow-lg [transform:rotateY(180deg)] [backface-visibility:hidden]">
+      <div className="hidden md:flex absolute items-center justify-center w-full h-full p-3 bg-cyan-700 border-1 border-white text-white rounded-lg shadow-lg [transform:rotateY(180deg)] [backface-visibility:hidden]">
         <p className="text-center text-sm px-2">{subtitle}</p>
       </div>
     </div>
@@ -189,12 +190,18 @@ const MenuIcon = (props: SVGProps<SVGSVGElement>) => (
 export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  useEffect(() => {
+    // When the homepage loads, always reset the isLoggingOut flag.
+    // This ensures that subsequent session expirations correctly redirect to /login.
+    authState.isLoggingOut = false;
+  }, []);
+
   return (
     <Fragment>
       <div className="h-screen flex flex-col overflow-hidden">
         <PgHeader />
-        <main className="flex-1 overflow-hidden flex flex-row bg-gray-50 relative">
-          <div className="w-full h-full relative">
+        <main className="flex-1 overflow-hidden relative bg-gray-50 md:flex md:flex-row">
+          <div className="w-full h-full relative md:flex-1">
             <Carousel />
             <div className="md:hidden absolute top-4 right-4 z-20">
               <button
@@ -206,14 +213,23 @@ export default function Home() {
             </div>
           </div>
           <aside
-            className={`
-              flex flex-col items-center justify-center p-4 absolute top-0 right-0 h-full
-              w-full md:w-1/4
-              bg-gradient-to-r from-transparent to-gray-100/60 md:to-blue-900
-              backdrop-blur-md md:backdrop-blur-none z-10 overflow-y-auto
+            className={`absolute top-0 right-0 h-full w-full flex flex-col items-center justify-start
+              bg-gradient-to-r from-transparent to-gray-100/60 backdrop-blur-md z-10 overflow-y-auto p-4
               transition-transform duration-300 ease-in-out
-              ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"} md:translate-x-0`}
+              ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}
+              md:static md:w-1/4 md:translate-x-0 md:justify-center
+              md:bg-none md:bg-emerald-900 md:backdrop-blur-none`}
           >
+            <p className="font-ScienceGothic-Light text-2xl tracking-wider whitespace-nowrap text-center text-gray-50 max-sm:text-xs mb-10">
+              [ F.N.I.T.A ]
+            </p>
+            <p className="font-ScienceGothic-ExtraLight text-xl  whitespace-nowrap text-center text-gray-50 max-sm:text-xs mb-10">
+              Fichier National
+              <br />
+              d&apos;Identification
+              <br />
+              et Traçabilité Animale
+            </p>
             <div className="w-full max-w-sm">
               <ActionButton
                 to="/lost"
