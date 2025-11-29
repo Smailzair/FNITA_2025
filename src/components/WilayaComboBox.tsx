@@ -2,27 +2,35 @@ import React, { useState, useRef } from "react";
 
 const ALGERIAN_WILAYAS = [
   "Adrar",
+  "Aflou",
   "Aïn Defla",
+  "Aïn Oussera",
   "Aïn Témouchent",
-  "Alger",
+  "Algiers",
   "Annaba",
+  "Barika",
   "Batna",
   "Béchar",
   "Béjaïa",
-  "Béni Abbès",
+  "Bir El Ater",
   "Biskra",
   "Blida",
-  "Bordj Badji Mokhtar",
-  "Bordj Bou Arreridj",
+  "Bordj Bou Arréridj",
+  "Bordj Baji Mokhtar",
+  "Bou Saâda",
   "Bouira",
   "Boumerdès",
+  "Béni Abbès",
   "Chlef",
   "Constantine",
   "Djanet",
   "Djelfa",
+  "El Abiodh Sidi Cheikh",
+  "El Aricha",
   "El Bayadh",
-  "El Meniaa",
-  "El M'Ghair",
+  "El Kantara",
+  "El M'ghair",
+  "El Menia",
   "El Oued",
   "El Tarf",
   "Ghardaïa",
@@ -32,12 +40,15 @@ const ALGERIAN_WILAYAS = [
   "In Salah",
   "Jijel",
   "Khenchela",
+  "Ksar Chellala",
+  "Ksar El Boukhari",
   "Laghouat",
+  "M'Sila",
   "Mascara",
+  "Messaâd",
   "Médéa",
   "Mila",
   "Mostaganem",
-  "M'Sila",
   "Naâma",
   "Oran",
   "Ouargla",
@@ -91,7 +102,7 @@ const WilayaComboBox: React.FC<WilayaComboBoxProps> = ({ value, onChange }) => {
         <input
           ref={inputRef}
           type="text"
-          className="text-gray-200 w-full pl-1 border rounded-l-lg"
+          className="text-gray-500 w-full pl-1 border rounded-l-lg"
           placeholder="Wilaya"
           value={value}
           onChange={(e) => {

@@ -162,6 +162,36 @@ type AnimalFormData = Omit<Partial<Animal>, "niss_date" | "radiat_date"> & {
   qr_code_status?: string | null;
 };
 
+const speciesImageFiles: Record<string, string> = {
+  Canine: "Canine.png",
+  Feline: "Feline.png",
+  Equine: "Equine.png",
+  Ovine: "Ovine.png",
+  Caprine: "Caprine.png",
+  Oiseaux: "Oiseaux.png",
+  Reptile: "Reptile.png",
+  Rongeur: "Rongeur.png",
+  Bovine: "Bovine.png",
+  Camélidé: "Camélidé.png",
+};
+
+const SpeciesIcon = ({ species }: { species: string | null | undefined }) => {
+  const imageName =
+    species && speciesImageFiles[species] ? speciesImageFiles[species] : null;
+
+  if (!imageName) {
+    return null; // Render nothing if no specific icon is found
+  }
+
+  return (
+    <img
+      src={`/Anims/${imageName}`}
+      alt={species || "Animal"}
+      className="h-12 w-12 object-contain"
+    />
+  );
+};
+
 export default function AnimalForm({
   animal,
   owners,
@@ -194,6 +224,10 @@ export default function AnimalForm({
   const [filteredRaceOptions, setFilteredRaceOptions] = useState(raceOptions);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
   const { role } = useAuth();
+  const [ownerSearch, setOwnerSearch] = useState("");
+  const [filteredOwners, setFilteredOwners] = useState<Owner[]>([]);
+  const [showOwnerSuggestions, setShowOwnerSuggestions] = useState(false);
+  const ownerInputRef = useState<HTMLDivElement | null>(null);
 
   const isEditing = animal && animal.id;
 
@@ -275,6 +309,11 @@ export default function AnimalForm({
         radiat_reason: isCustomRadiatReason ? "Autre" : animal.radiat_reason,
         race: isCustomRace ? "Autre" : animal.race,
       });
+      const owner = owners.find((o) => o.id === animal.propr_id);
+      setOwnerSearch(owner ? owner.nme : "");
+    } else {
+      // Reset for new animal form
+      setOwnerSearch("");
     }
   }, [animal]);
 
@@ -286,7 +325,22 @@ export default function AnimalForm({
       // If no species is selected, or it's not in our map, show all races
       setFilteredRaceOptions(raceOptions);
     }
-  }, [formData.espece]);
+  }, [formData.espece, animal]);
+
+  useEffect(() => {
+    const handler = (event: MouseEvent) => {
+      if (
+        ownerInputRef[0] &&
+        !ownerInputRef[0].contains(event.target as Node)
+      ) {
+        setShowOwnerSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+    };
+  }, [ownerInputRef]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -325,6 +379,45 @@ export default function AnimalForm({
   const handleCustomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleOwnerSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchText = e.target.value;
+    setOwnerSearch(searchText);
+    if (searchText) {
+      setFilteredOwners(
+        owners.filter((owner) =>
+          owner.nme.toLowerCase().includes(searchText.toLowerCase())
+        )
+      );
+      setShowOwnerSuggestions(true);
+    } else {
+      setFilteredOwners([]);
+      setShowOwnerSuggestions(false);
+      setFormData((prev) => ({ ...prev, propr_id: null }));
+    }
+  };
+
+  const handleOwnerSelect = (owner: Owner) => {
+    setFormData((prev) => ({ ...prev, propr_id: owner.id }));
+    setOwnerSearch(owner.nme);
+    setShowOwnerSuggestions(false);
+    setFilteredOwners([]);
+  };
+
+  const toggleSexe = () => {
+    setFormData((prev) => ({
+      ...prev,
+      sexe: prev.sexe === "Mâle" ? "Femelle" : "Mâle",
+    }));
+  };
+
+  const handleOwnerBlur = () => {
+    // We use a small timeout to allow a click on a suggestion to be processed
+    // before we validate the field.
+    setTimeout(() => {
+      setShowOwnerSuggestions(false);
+    }, 150); // 150ms delay
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -412,10 +505,13 @@ export default function AnimalForm({
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-lg shadow-xl max-w-2xl w-full">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-gray-900 text-2xl font-bold">
-          {isEditing ? "Modifier l'animal" : "Ajouter un animal"}
-        </h2>
+      <div className="flex justify-between items-start mb-6">
+        <div className="flex items-center gap-4">
+          <SpeciesIcon species={formData.espece} />
+          <h2 className="text-gray-900 text-2xl font-bold">
+            {isEditing ? "Modifier l'animal" : "Ajouter un animal"}
+          </h2>
+        </div>
         {isEditing && (
           <div className="flex items-center gap-3">
             <button
@@ -527,28 +623,45 @@ export default function AnimalForm({
             >
               * Propriétaire
             </label>
-            <div className="flex items-center gap-2">
-              <select
-                id="propr_id"
-                name="propr_id"
-                value={formData.propr_id || ""}
-                onChange={handleChange}
-                className="p-1 border rounded w-full text-gray-900 bg-white"
-                required
-              >
-                <option value="" disabled>
-                  Sélectionner un propriétaire
-                </option>
-                {owners.map((owner) => (
-                  <option key={owner.id} value={owner.id}>
-                    {owner.nme}
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-2" ref={ownerInputRef}>
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  id="owner_search"
+                  value={ownerSearch}
+                  onChange={handleOwnerSearchChange}
+                  onFocus={() => setShowOwnerSuggestions(true)}
+                  onBlur={handleOwnerBlur}
+                  placeholder="Rechercher un propriétaire"
+                  className="p-1 border rounded w-full text-gray-900 bg-white"
+                  required
+                  autoComplete="off"
+                />
+                {showOwnerSuggestions &&
+                  (filteredOwners.length > 0 || ownerSearch) && (
+                    <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto shadow-lg">
+                      {filteredOwners.length > 0 ? (
+                        filteredOwners.map((owner) => (
+                          <li
+                            key={owner.id}
+                            onClick={() => handleOwnerSelect(owner)}
+                            className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                          >
+                            {owner.nme}
+                          </li>
+                        ))
+                      ) : (
+                        <li className="px-3 py-2 text-gray-500">
+                          Aucun propriétaire trouvé
+                        </li>
+                      )}
+                    </ul>
+                  )}
+              </div>
               <button
                 type="button"
                 onClick={() => setIsOwnerModalOpen(true)}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-3 rounded"
+                className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-3 rounded flex-shrink-0"
                 title="Ajouter un nouveau propriétaire"
               >
                 +
@@ -607,9 +720,14 @@ export default function AnimalForm({
               name="race"
               value={formData.race || ""}
               onChange={handleChange}
-              className="p-1 border rounded w-full text-gray-900 bg-white"
+              className="p-1 border rounded w-full text-gray-900 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+              disabled={filteredRaceOptions.length === 0}
             >
-              <option value="">Sélectionner une race</option>
+              <option value="">
+                {filteredRaceOptions.length === 0
+                  ? "(Aucune race pour cette espèce)"
+                  : "Sélectionner une race"}
+              </option>
               {filteredRaceOptions.map((r) => (
                 <option key={r} value={r}>
                   {r}
@@ -640,16 +758,52 @@ export default function AnimalForm({
             >
               Sexe
             </label>
-            <select
-              id="sexe"
-              name="sexe"
-              value={formData.sexe || ""}
-              onChange={handleChange}
-              className="p-1 border rounded w-full text-gray-900 bg-white"
-            >
-              <option value="Mâle">Mâle</option>
-              <option value="Femelle">Femelle</option>
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                id="sexe"
+                name="sexe"
+                value={formData.sexe || ""}
+                onChange={handleChange}
+                className="p-1 border rounded w-full text-gray-900 bg-white"
+              >
+                <option value="Mâle">Mâle</option>
+                <option value="Femelle">Femelle</option>
+              </select>
+              <button
+                type="button"
+                onClick={toggleSexe}
+                className="flex items-center justify-center h-9 w-9 bg-gray-200 rounded-full hover:bg-gray-300"
+                title={`Changer pour ${
+                  formData.sexe === "Mâle" ? "Femelle" : "Mâle"
+                }`}
+              >
+                {formData.sexe === "Mâle" ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    enable-background="new 0 0 24 24"
+                    height="24px"
+                    viewBox="0 0 24 24"
+                    width="24px"
+                    fill="#2854C5"
+                  >
+                    <rect fill="none" height="24" width="24" />
+                    <path d="M9.5,11c1.93,0,3.5,1.57,3.5,3.5S11.43,18,9.5,18S6,16.43,6,14.5S7.57,11,9.5,11z M9.5,9C6.46,9,4,11.46,4,14.5 S6.46,20,9.5,20s5.5-2.46,5.5-5.5c0-1.16-0.36-2.23-0.97-3.12L18,7.42V10h2V4h-6v2h2.58l-3.97,3.97C11.73,9.36,10.66,9,9.5,9z" />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    enable-background="new 0 0 24 24"
+                    height="24px"
+                    viewBox="0 0 24 24"
+                    width="24px"
+                    fill="#BB271A"
+                  >
+                    <rect fill="none" height="24" width="24" />
+                    <path d="M17.5,9.5C17.5,6.46,15.04,4,12,4S6.5,6.46,6.5,9.5c0,2.7,1.94,4.93,4.5,5.4V17H9v2h2v2h2v-2h2v-2h-2v-2.1 C15.56,14.43,17.5,12.2,17.5,9.5z M8.5,9.5C8.5,7.57,10.07,6,12,6s3.5,1.57,3.5,3.5S13.93,13,12,13S8.5,11.43,8.5,9.5z" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
           <div>
             <label

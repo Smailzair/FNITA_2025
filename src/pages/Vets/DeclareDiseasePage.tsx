@@ -15,6 +15,7 @@ type Animal = {
   id: string;
   nme: string;
   espece: string;
+  qr_code_identifier: string;
 };
 
 type Declaration = {
@@ -34,6 +35,68 @@ type Declaration = {
 type DeclarationType = "specific_animal" | "by_type" | "by_location";
 
 export default function DeclareDiseasePage() {
+  const diseaseSuggestions = [
+    "La Fièvre Aphteuse",
+    "La Peste Bovine",
+    "La peste Équine",
+    "La Péripneumonie contagieuse bovine",
+    "La Rage dans toutes les espèces",
+    "La Clavelée et Variole caprine",
+    "La Maladie de New-castle",
+    "La Peste aviaire",
+    "La Fièvre charbonneuse chez toutes les espèces mammifères",
+    "La Fièvre catarrhale du mouton",
+    "La Tuberculose bovine",
+    "La Brucellose dans les espèces bovine, ovine, caprine",
+    "L’anémie infectieuse des équidés",
+    "La Métrite contagieuse équine",
+    "La Dourine",
+    "La Morve",
+    "La Rhinotrachéite infectieuse bovine",
+    "La Leucose bovine enzootique",
+    "La Campylobactériose génitale bovine",
+    "La Trichomonose bovine",
+    "L’Echinococcose/ Hydatidose",
+    "La Cysticercose",
+    "Le Charbon Symptomatique",
+    "L’Avortement enzootique des brebis",
+    "La Gale des équidés",
+    "La Paratuberculose",
+    "La Fièvre Q",
+    "La Leptospirose bovine",
+    "La Bronchite infectieuse aviaire",
+    "La Maladie de Marek",
+    "Le Choléra aviaire",
+    "La Bursite infectieuse (maladie de Gomboro)",
+    "La Variole aviaire",
+    "Les Salmonelloses aviaires à Salmonella : pullorum-gallinarum",
+    "L’Ornithose/ Psittacoses",
+    "Les Leucoses aviaires",
+    "La Myxomatose",
+    "Maladie hémorragique virale du lapin",
+    "La Tularémie",
+    "La Varoise des abeilles",
+    "La Loque, la Nosémose et l’acariose des abeilles",
+    "La Variole cameline",
+    "La Trypanosomose des camelins à Tevansi (surra)",
+    "La Leishmaniose",
+    "La Peste des petits ruminants",
+    "L’Encéphalopathie spongiforme des bovins",
+    "La Fièvre de la vallée du Rift",
+  ];
+  const especeOptions = [
+    "Canine",
+    "Feline",
+    "Equine",
+    "Ovine",
+    "Caprine",
+    "Oiseaux",
+    "Reptile",
+    "Rongeur",
+    "Bovine",
+    "Camélidé",
+  ];
+
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [declarationType, setDeclarationType] =
     useState<DeclarationType>("specific_animal");
@@ -44,6 +107,11 @@ export default function DeclareDiseasePage() {
   const [selectedWilaya, setSelectedWilaya] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [diseaseName, setDiseaseName] = useState("");
+  const [animalSearch, setAnimalSearch] = useState("");
+  const [animalSelectionMethod, setAnimalSelectionMethod] = useState<
+    "name" | "qr_code"
+  >("name");
+  const [qrCodeInput, setQrCodeInput] = useState("");
   const [diagnosisDate, setDiagnosisDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -55,6 +123,8 @@ export default function DeclareDiseasePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [qrCodeError, setQrCodeError] = useState<string | null>(null);
+  const [isAnimalListOpen, setIsAnimalListOpen] = useState(false);
 
   // History Table State
   const [declarations, setDeclarations] = useState<Declaration[]>([]);
@@ -63,6 +133,11 @@ export default function DeclareDiseasePage() {
   const [historyStatusFilter, setHistoryStatusFilter] = useState("all");
 
   const fetchVetAnimals = useCallback(async () => {
+    // Reset animal search state on fetch
+    setAnimalSearch("");
+    setSelectedAnimal("");
+    setIsAnimalListOpen(false);
+
     setLoading(true);
     try {
       const {
@@ -73,9 +148,10 @@ export default function DeclareDiseasePage() {
       // Fetch animals whose owners were created by the current vet
       const { data, error } = await supabase
         .from("tb_animals")
-        .select("id, nme, espece, propr_id!inner(created_by_email)")
-        .eq("propr_id.created_by_email", user.email);
-
+        .select(
+          "id, nme, espece, qr_code_identifier, created_by_email, tb_props!left(email)"
+        )
+        .eq("created_by_email", user.email);
       if (error) throw error;
 
       setAnimals(data as Animal[]);
@@ -124,6 +200,24 @@ export default function DeclareDiseasePage() {
   useEffect(() => {
     void fetchDeclarations();
   }, [fetchDeclarations]);
+
+  // Effect to validate QR code input
+  useEffect(() => {
+    if (animalSelectionMethod === "qr_code" && qrCodeInput) {
+      const foundAnimal = animals.find(
+        (animal) => animal.qr_code_identifier === qrCodeInput
+      );
+      if (foundAnimal) {
+        setSelectedAnimal(foundAnimal.id);
+        setQrCodeError(null);
+      } else {
+        setSelectedAnimal("");
+        setQrCodeError("QR code non valide ou non trouvé.");
+      }
+    } else {
+      setQrCodeError(null);
+    }
+  }, [qrCodeInput, animals, animalSelectionMethod]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -182,6 +276,9 @@ export default function DeclareDiseasePage() {
       setSuccessMessage("La maladie a été déclarée avec succès !");
       // Reset form
       setSelectedAnimal("");
+      setIsAnimalListOpen(false);
+      setQrCodeInput("");
+      setAnimalSearch("");
       setSelectedEspece("");
       setSelectedWilaya("");
       setSelectedCity("");
@@ -195,6 +292,22 @@ export default function DeclareDiseasePage() {
       setIsSaving(false);
     }
   };
+
+  const filteredAnimals = useMemo(() => {
+    if (!animalSearch) return animals;
+    const searchTerm = animalSearch.toLowerCase();
+    return animals.filter((animal) =>
+      animal.nme.toLowerCase().includes(searchTerm)
+    );
+  }, [animals, animalSearch, isAnimalListOpen]);
+
+  const showQrSuggestion = useMemo(() => {
+    return (
+      animalSelectionMethod === "name" &&
+      animalSearch.length > 0 &&
+      filteredAnimals.length === 0
+    );
+  }, [animalSelectionMethod, animalSearch, filteredAnimals]);
 
   const filteredDeclarations = useMemo(() => {
     return declarations
@@ -335,25 +448,116 @@ export default function DeclareDiseasePage() {
                 >
                   Animal Concerné <span className="text-red-500">*</span>
                 </label>
-                <select
-                  id="animal"
-                  value={selectedAnimal}
-                  onChange={(e) => setSelectedAnimal(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
-                  required
-                  disabled={loading}
-                >
-                  <option value="" disabled>
-                    {loading
-                      ? "Chargement des animaux..."
-                      : "Sélectionner un animal"}
-                  </option>
-                  {animals.map((animal) => (
-                    <option key={animal.id} value={animal.id}>
-                      {animal.nme} ({animal.espece})
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-3">
+                  <div className="flex space-x-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="animalSelectionMethod"
+                        value="name"
+                        checked={animalSelectionMethod === "name"}
+                        onChange={() => setAnimalSelectionMethod("name")}
+                        className="form-radio h-4 w-4 text-cyan-600"
+                      />
+                      <span className="ml-2 text-gray-700">Par Nom</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="animalSelectionMethod"
+                        value="qr_code"
+                        checked={animalSelectionMethod === "qr_code"}
+                        onChange={() => setAnimalSelectionMethod("qr_code")}
+                        className="form-radio h-4 w-4 text-cyan-600"
+                      />
+                      <span className="ml-2 text-gray-700">Par QR Code</span>
+                    </label>
+                  </div>
+
+                  {animalSelectionMethod === "name" && (
+                    <div className="relative">
+                      <input
+                        type="text"
+                        id="animal-search"
+                        value={animalSearch}
+                        onFocus={() => setIsAnimalListOpen(true)}
+                        onBlur={() =>
+                          setTimeout(() => setIsAnimalListOpen(false), 200)
+                        } // Delay to allow click
+                        onChange={(e) => {
+                          setAnimalSearch(e.target.value);
+                          setSelectedAnimal(""); // Clear selection
+                          setIsAnimalListOpen(true);
+                        }}
+                        placeholder={
+                          loading ? "Chargement..." : "Rechercher par nom..."
+                        }
+                        className="w-full p-2 pr-8 border border-gray-300 rounded-md shadow-sm text-gray-900"
+                        disabled={loading}
+                        required={!selectedAnimal}
+                      />
+                      <div
+                        className="absolute inset-y-0 right-0 flex items-center px-2 cursor-pointer"
+                        onClick={() => setIsAnimalListOpen(!isAnimalListOpen)}
+                      >
+                        <svg
+                          className="fill-current h-4 w-4 text-gray-500"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                        </svg>
+                      </div>
+                      {isAnimalListOpen && !loading && (
+                        <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto shadow-lg">
+                          {filteredAnimals.length > 0 ? (
+                            filteredAnimals.map((animal) => (
+                              <li
+                                key={animal.id}
+                                onMouseDown={() => {
+                                  setSelectedAnimal(animal.id);
+                                  setAnimalSearch(animal.nme);
+                                  setIsAnimalListOpen(false);
+                                }}
+                                className="p-2 hover:bg-cyan-50 cursor-pointer text-gray-900"
+                              >
+                                {animal.nme} ({animal.espece})
+                              </li>
+                            ))
+                          ) : (
+                            <li className="p-2 text-gray-500">
+                              Aucun animal trouvé
+                            </li>
+                          )}
+                        </ul>
+                      )}
+                      {showQrSuggestion && (
+                        <p className="text-red-500 text-xs mt-1">
+                          Cet animal n'existe pas.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {animalSelectionMethod === "qr_code" && (
+                    <div>
+                      <input
+                        type="text"
+                        id="qr-code-input"
+                        value={qrCodeInput}
+                        onChange={(e) => setQrCodeInput(e.target.value)}
+                        placeholder="Entrer ou scanner le QR code"
+                        className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-gray-900"
+                        required={!selectedAnimal}
+                      />
+                      {qrCodeError && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {qrCodeError}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -365,20 +569,40 @@ export default function DeclareDiseasePage() {
                 >
                   Espèce Concernée <span className="text-red-500">*</span>
                 </label>
-                <select
-                  id="espece"
-                  value={selectedEspece}
-                  onChange={(e) => setSelectedEspece(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
-                  required
-                >
-                  <option value="">Sélectionner une espèce</option>
-                  <option value="Ovin">Ovin</option>
-                  <option value="Bovin">Bovin</option>
-                  <option value="Caprin">Caprin</option>
-                  <option value="Camelin">Camelin</option>
-                  <option value="Equin">Equin</option>
-                </select>
+                <div className="space-y-2">
+                  <select
+                    id="espece"
+                    value={
+                      especeOptions.includes(selectedEspece)
+                        ? selectedEspece
+                        : "Autre"
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSelectedEspece(value === "Autre" ? "" : value);
+                    }}
+                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500 text-gray-900"
+                    required
+                  >
+                    <option value="">Sélectionner une espèce</option>
+                    {especeOptions.map((e) => (
+                      <option key={e} value={e}>
+                        {e}
+                      </option>
+                    ))}
+                    <option value="Autre">Autre...</option>
+                  </select>
+                  {!especeOptions.includes(selectedEspece) && (
+                    <input
+                      type="text"
+                      value={selectedEspece}
+                      onChange={(e) => setSelectedEspece(e.target.value)}
+                      placeholder="Préciser l'espèce"
+                      className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-gray-900"
+                      required
+                    />
+                  )}
+                </div>
               </div>
             )}
 
@@ -424,9 +648,15 @@ export default function DeclareDiseasePage() {
                 id="diseaseName"
                 value={diseaseName}
                 onChange={(e) => setDiseaseName(e.target.value)}
+                list="disease-suggestions"
                 className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-gray-900"
                 required
               />
+              <datalist id="disease-suggestions">
+                {diseaseSuggestions.map((suggestion) => (
+                  <option key={suggestion} value={suggestion} />
+                ))}
+              </datalist>
             </div>
 
             <div>
@@ -436,14 +666,25 @@ export default function DeclareDiseasePage() {
               >
                 Date du Diagnostic <span className="text-red-500">*</span>
               </label>
-              <input
-                type="date"
-                id="diagnosisDate"
-                value={diagnosisDate}
-                onChange={(e) => setDiagnosisDate(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-gray-900"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  id="diagnosisDate"
+                  value={diagnosisDate}
+                  onChange={(e) => setDiagnosisDate(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-gray-900 appearance-none"
+                  required
+                />
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <svg
+                    className="fill-current h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9 11H5V13H9V11ZM15 11H11V13H15V11ZM19 4H18V2H16V4H8V2H6V4H5C3.89 4 3.01 4.9 3.01 6L3 20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V9H19V20Z" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             <div>
