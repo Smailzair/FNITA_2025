@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "../../api/supabaseClient";
 import type { Animal } from "../animal";
 import { useAuth } from "../../hooks/useAuth";
@@ -227,7 +227,7 @@ export default function AnimalForm({
   const [ownerSearch, setOwnerSearch] = useState("");
   const [filteredOwners, setFilteredOwners] = useState<Owner[]>([]);
   const [showOwnerSuggestions, setShowOwnerSuggestions] = useState(false);
-  const ownerInputRef = useState<HTMLDivElement | null>(null);
+  const ownerInputRef = useRef<HTMLDivElement | null>(null);
 
   const isEditing = animal && animal.id;
 
@@ -330,8 +330,8 @@ export default function AnimalForm({
   useEffect(() => {
     const handler = (event: MouseEvent) => {
       if (
-        ownerInputRef[0] &&
-        !ownerInputRef[0].contains(event.target as Node)
+        ownerInputRef.current &&
+        !ownerInputRef.current.contains(event.target as Node)
       ) {
         setShowOwnerSuggestions(false);
       }
@@ -445,8 +445,7 @@ export default function AnimalForm({
 
       if (isEditing && animal) {
         // For updates, we use the submissionData as is
-        const { created_by_email, owner_name, owner, ...updateData } =
-          submissionData as any;
+        const { created_by_email, ...updateData } = submissionData;
         response = await supabase
           .from("tb_animals")
           .update(updateData)
