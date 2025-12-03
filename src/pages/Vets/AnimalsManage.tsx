@@ -120,7 +120,7 @@ export default function AnimalsManage() {
         throw new Error("Utilisateur non authentifié.");
       }
 
-      let query = supabase.from("tb_props").select("id, nme, fam_nme");
+      let query = supabase.from("tb_props").select("*"); // Select all owner fields
 
       // Vets should only see owners they created
       if (user.user_metadata.type === "Vétérinaire") {
