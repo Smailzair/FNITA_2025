@@ -151,6 +151,29 @@ export default function OwnersManage() {
   const handleDelete = async () => {
     if (selectedOwnerIds.length === 0) return;
 
+    try {
+      // Check for non-radiated animals before allowing deletion
+      const { data: associatedAnimals, error: animalsError } = await supabase
+        .from("tb_animals")
+        .select("id")
+        .in("propr_id", selectedOwnerIds)
+        .eq("is_radiated", false);
+
+      if (animalsError) {
+        throw animalsError;
+      }
+
+      if (associatedAnimals && associatedAnimals.length > 0) {
+        alert(
+          `Impossible de supprimer. ${associatedAnimals.length} animal(aux) non radié(s) sont toujours associés à ce(s) propriétaire(s). Veuillez d'abord radier ou réaffecter ces animaux.`
+        );
+        return; // Stop the deletion process
+      }
+    } catch (err: any) {
+      setError(`Erreur lors de la vérification des animaux: ${err.message}`);
+      return;
+    }
+
     const confirmDelete = window.confirm(
       `Êtes-vous sûr de vouloir supprimer ${selectedOwnerIds.length} propriétaire(s) ? Cette action est irréversible.`
     );
@@ -230,14 +253,14 @@ export default function OwnersManage() {
               <button
                 onClick={handleEditClick}
                 disabled={selectedOwnerIds.length !== 1}
-                className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed"
               >
                 Modifier
               </button>
               <button
                 onClick={() => void handleDelete()}
                 disabled={selectedOwnerIds.length === 0}
-                className="flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:text-gray-400  disabled:cursor-not-allowed"
               >
                 Supprimer
               </button>

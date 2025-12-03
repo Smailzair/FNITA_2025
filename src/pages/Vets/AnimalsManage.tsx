@@ -18,6 +18,7 @@ type FilterOptions = {
 type Owner = {
   id: string;
   nme: string;
+  fam_nme: string;
 };
 
 export default function AnimalsManage() {
@@ -112,13 +113,25 @@ export default function AnimalsManage() {
 
   const fetchOwners = useCallback(async () => {
     try {
-      const { data, error: fetchError } = await supabase
-        .from("tb_props")
-        .select("id, nme");
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("Utilisateur non authentifié.");
+      }
+
+      let query = supabase.from("tb_props").select("id, nme, fam_nme");
+
+      // Vets should only see owners they created
+      if (user.user_metadata.type === "Vétérinaire") {
+        query = query.eq("created_by_email", user.email);
+      }
+
+      const { data, error: fetchError } = await query;
       if (fetchError) throw fetchError;
       setOwners(data || []);
-    } catch (err) {
-      console.error("Error fetching owners:", err);
+    } catch (err: any) {
+      setError("Impossible de charger les propriétaires: " + err.message);
     }
   }, []);
 
@@ -433,7 +446,7 @@ export default function AnimalsManage() {
                 disabled={
                   selectedAnimalIds.length !== 1 || filteredAnimals.length === 0
                 }
-                className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full disabled:text-gray-400 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -458,7 +471,7 @@ export default function AnimalsManage() {
                   filteredAnimals.length === 0 ||
                   areAllSelectedRadiated
                 }
-                className="flex items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="flex items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-full disabled:text-gray-400 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -481,7 +494,7 @@ export default function AnimalsManage() {
                 disabled={
                   selectedAnimalIds.length === 0 || filteredAnimals.length === 0
                 }
-                className="flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full disabled:text-gray-400 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -501,8 +514,8 @@ export default function AnimalsManage() {
               </button>
               <button
                 onClick={() => void handleRequestQrCode()}
-                disabled={!canRequestQrCode}
-                className="flex items-center justify-center bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed"
+                disabled={!canRequestQrCode || filteredAnimals.length === 0}
+                className="flex items-center justify-center bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-full disabled:text-gray-400 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -560,7 +573,7 @@ export default function AnimalsManage() {
               <option value="all">Tous les Propriétaires</option>
               {owners.map((owner) => (
                 <option key={owner.id} value={owner.id}>
-                  {owner.nme}
+                  {owner.nme} {owner.fam_nme}
                 </option>
               ))}
             </select>

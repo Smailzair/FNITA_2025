@@ -15,6 +15,8 @@ type Animal = {
   id: string;
   nme: string;
   espece: string;
+  num_ident: string; // Added num_ident to Animal type
+  tb_props: { nme: string } | null;
   qr_code_identifier: string;
 };
 
@@ -123,8 +125,9 @@ export default function DeclareDiseasePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [qrCodeError, setQrCodeError] = useState<string | null>(null);
+  const [inputError, setInputError] = useState<string | null>(null);
   const [isAnimalListOpen, setIsAnimalListOpen] = useState(false);
+  const [foundAnimalInfo, setFoundAnimalInfo] = useState<Animal | null>(null);
 
   // History Table State
   const [declarations, setDeclarations] = useState<Declaration[]>([]);
@@ -149,7 +152,7 @@ export default function DeclareDiseasePage() {
       const { data, error } = await supabase
         .from("tb_animals")
         .select(
-          "id, nme, espece, qr_code_identifier, created_by_email, tb_props!left(email)"
+          "id, nme, espece, num_ident, qr_code_identifier, tb_props ( nme )"
         )
         .eq("created_by_email", user.email);
       if (error) throw error;
@@ -201,23 +204,44 @@ export default function DeclareDiseasePage() {
     void fetchDeclarations();
   }, [fetchDeclarations]);
 
-  // Effect to validate QR code input
+  // Effect to validate animal input (by ID or QR code)
   useEffect(() => {
-    if (animalSelectionMethod === "qr_code" && qrCodeInput) {
-      const foundAnimal = animals.find(
+    let foundAnimal: Animal | undefined;
+    let errorMessage: string | null = null;
+
+    if (animalSelectionMethod === "name" && animalSearch) {
+      foundAnimal = animals.find((animal) => animal.num_ident === animalSearch);
+      errorMessage = "Numéro d'identification non valide ou non trouvé.";
+    } else if (animalSelectionMethod === "qr_code" && qrCodeInput) {
+      foundAnimal = animals.find(
         (animal) => animal.qr_code_identifier === qrCodeInput
       );
+      errorMessage = "QR code non valide ou non trouvé.";
+    }
+
+    if (
+      (animalSelectionMethod === "name" && animalSearch) ||
+      (animalSelectionMethod === "qr_code" && qrCodeInput)
+    ) {
       if (foundAnimal) {
         setSelectedAnimal(foundAnimal.id);
-        setQrCodeError(null);
+        setFoundAnimalInfo(foundAnimal);
+        setInputError(null);
       } else {
         setSelectedAnimal("");
-        setQrCodeError("QR code non valide ou non trouvé.");
+        setFoundAnimalInfo(null);
+        setInputError(errorMessage);
       }
     } else {
-      setQrCodeError(null);
+      setInputError(null);
     }
-  }, [qrCodeInput, animals, animalSelectionMethod]);
+  }, [animalSearch, qrCodeInput, animals, animalSelectionMethod]);
+
+  useEffect(() => {
+    // Clear found animal info when declaration type changes
+    setFoundAnimalInfo(null);
+    setInputError(null);
+  }, [declarationType]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -292,22 +316,6 @@ export default function DeclareDiseasePage() {
       setIsSaving(false);
     }
   };
-
-  const filteredAnimals = useMemo(() => {
-    if (!animalSearch) return animals;
-    const searchTerm = animalSearch.toLowerCase();
-    return animals.filter((animal) =>
-      animal.nme.toLowerCase().includes(searchTerm)
-    );
-  }, [animals, animalSearch, isAnimalListOpen]);
-
-  const showQrSuggestion = useMemo(() => {
-    return (
-      animalSelectionMethod === "name" &&
-      animalSearch.length > 0 &&
-      filteredAnimals.length === 0
-    );
-  }, [animalSelectionMethod, animalSearch, filteredAnimals]);
 
   const filteredDeclarations = useMemo(() => {
     return declarations
@@ -456,10 +464,17 @@ export default function DeclareDiseasePage() {
                         name="animalSelectionMethod"
                         value="name"
                         checked={animalSelectionMethod === "name"}
-                        onChange={() => setAnimalSelectionMethod("name")}
+                        onChange={() => {
+                          setAnimalSelectionMethod("name");
+                          setQrCodeInput("");
+                          setSelectedAnimal("");
+                          setInputError(null);
+                        }}
                         className="form-radio h-4 w-4 text-cyan-600"
                       />
-                      <span className="ml-2 text-gray-700">Par Nom</span>
+                      <span className="ml-2 text-gray-700">
+                        Par Numéro d'Identification
+                      </span>
                     </label>
                     <label className="flex items-center">
                       <input
@@ -467,7 +482,12 @@ export default function DeclareDiseasePage() {
                         name="animalSelectionMethod"
                         value="qr_code"
                         checked={animalSelectionMethod === "qr_code"}
-                        onChange={() => setAnimalSelectionMethod("qr_code")}
+                        onChange={() => {
+                          setAnimalSelectionMethod("qr_code");
+                          setAnimalSearch("");
+                          setSelectedAnimal("");
+                          setInputError(null);
+                        }}
                         className="form-radio h-4 w-4 text-cyan-600"
                       />
                       <span className="ml-2 text-gray-700">Par QR Code</span>
@@ -475,67 +495,23 @@ export default function DeclareDiseasePage() {
                   </div>
 
                   {animalSelectionMethod === "name" && (
-                    <div className="relative">
+                    <div>
                       <input
                         type="text"
                         id="animal-search"
                         value={animalSearch}
-                        onFocus={() => setIsAnimalListOpen(true)}
-                        onBlur={() =>
-                          setTimeout(() => setIsAnimalListOpen(false), 200)
-                        } // Delay to allow click
                         onChange={(e) => {
                           setAnimalSearch(e.target.value);
-                          setSelectedAnimal(""); // Clear selection
-                          setIsAnimalListOpen(true);
                         }}
                         placeholder={
-                          loading ? "Chargement..." : "Rechercher par nom..."
+                          loading
+                            ? "Chargement..."
+                            : "Entrer le numéro d'identification..."
                         }
-                        className="w-full p-2 pr-8 border border-gray-300 rounded-md shadow-sm text-gray-900"
+                        className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-gray-900"
                         disabled={loading}
                         required={!selectedAnimal}
                       />
-                      <div
-                        className="absolute inset-y-0 right-0 flex items-center px-2 cursor-pointer"
-                        onClick={() => setIsAnimalListOpen(!isAnimalListOpen)}
-                      >
-                        <svg
-                          className="fill-current h-4 w-4 text-gray-500"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                        </svg>
-                      </div>
-                      {isAnimalListOpen && !loading && (
-                        <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto shadow-lg">
-                          {filteredAnimals.length > 0 ? (
-                            filteredAnimals.map((animal) => (
-                              <li
-                                key={animal.id}
-                                onMouseDown={() => {
-                                  setSelectedAnimal(animal.id);
-                                  setAnimalSearch(animal.nme);
-                                  setIsAnimalListOpen(false);
-                                }}
-                                className="p-2 hover:bg-cyan-50 cursor-pointer text-gray-900"
-                              >
-                                {animal.nme} ({animal.espece})
-                              </li>
-                            ))
-                          ) : (
-                            <li className="p-2 text-gray-500">
-                              Aucun animal trouvé
-                            </li>
-                          )}
-                        </ul>
-                      )}
-                      {showQrSuggestion && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Cet animal n'existe pas.
-                        </p>
-                      )}
                     </div>
                   )}
 
@@ -550,11 +526,28 @@ export default function DeclareDiseasePage() {
                         className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-gray-900"
                         required={!selectedAnimal}
                       />
-                      {qrCodeError && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {qrCodeError}
-                        </p>
-                      )}
+                    </div>
+                  )}
+                  {inputError && (
+                    <p className="text-red-500 text-xs mt-1">{inputError}</p>
+                  )}
+                  {foundAnimalInfo && !inputError && (
+                    <div className="mt-3 p-3 bg-cyan-50 border border-cyan-200 rounded-md text-sm text-gray-800">
+                      <p>
+                        <strong>Animal Trouvé :</strong>
+                      </p>
+                      <ul className="list-disc list-inside ml-2">
+                        <li>
+                          <strong>Nom:</strong> {foundAnimalInfo.nme}
+                        </li>
+                        <li>
+                          <strong>Espèce:</strong> {foundAnimalInfo.espece}
+                        </li>
+                        <li>
+                          <strong>Propriétaire:</strong>{" "}
+                          {foundAnimalInfo.tb_props?.nme || "N/A"}
+                        </li>
+                      </ul>
                     </div>
                   )}
                 </div>

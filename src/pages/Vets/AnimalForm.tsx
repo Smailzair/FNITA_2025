@@ -8,6 +8,13 @@ import OwnerForm from "./OwnerForm";
 type Owner = {
   id: string;
   nme: string;
+  fam_nme: string;
+  tel?: string | null;
+  email?: string | null;
+  adresse?: string | null;
+  wilaya?: string | null;
+  city?: string | null;
+  code_postal?: string | null;
 };
 
 const especeOptions = [
@@ -160,6 +167,7 @@ type AnimalFormData = Omit<Partial<Animal>, "niss_date" | "radiat_date"> & {
   radiat_date?: string;
   qr_code_identifier?: string | null;
   qr_code_status?: string | null;
+  password?: string | null;
 };
 
 const speciesImageFiles: Record<string, string> = {
@@ -217,6 +225,7 @@ export default function AnimalForm({
     radiat_reason: "",
     qr_code_identifier: "",
     qr_code_status: "none",
+    password: "",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -224,10 +233,12 @@ export default function AnimalForm({
   const [filteredRaceOptions, setFilteredRaceOptions] = useState(raceOptions);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
   const { role } = useAuth();
-  const [ownerSearch, setOwnerSearch] = useState("");
+  const { user } = useAuth();
   const [filteredOwners, setFilteredOwners] = useState<Owner[]>([]);
   const [showOwnerSuggestions, setShowOwnerSuggestions] = useState(false);
   const ownerInputRef = useRef<HTMLDivElement | null>(null);
+  const [numIdentError, setNumIdentError] = useState<string | null>(null);
+  const [isCheckingNumIdent, setIsCheckingNumIdent] = useState(false);
 
   const isEditing = animal && animal.id;
 
@@ -310,7 +321,7 @@ export default function AnimalForm({
         race: isCustomRace ? "Autre" : animal.race,
       });
       const owner = owners.find((o) => o.id === animal.propr_id);
-      setOwnerSearch(owner ? owner.nme : "");
+      setOwnerSearch(owner ? `${owner.nme} ${owner.fam_nme || ""}`.trim() : "");
     } else {
       // Reset for new animal form
       setOwnerSearch("");
@@ -342,6 +353,15 @@ export default function AnimalForm({
     };
   }, [ownerInputRef]);
 
+  // Clear num_ident error when form opens/closes or animal changes
+  useEffect(() => {
+    setNumIdentError(null);
+  }, [animal]);
+
+  const handleNumIdentBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    void checkNumIdentUniqueness(e.target.value);
+  };
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -353,6 +373,19 @@ export default function AnimalForm({
 
     setFormData((prev) => {
       const newState = { ...prev, [name]: isCheckbox ? checked : value };
+
+      if (name === "num_ident") {
+        const sanitizedValue = value
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "")
+          .slice(0, 15);
+        newState.num_ident = sanitizedValue;
+      }
+
+      if (name === "password") {
+        const sanitizedValue = value.replace(/\s/g, "");
+        newState.password = sanitizedValue;
+      }
 
       if (name === "is_radiated") {
         if (checked) {
@@ -385,11 +418,30 @@ export default function AnimalForm({
     const searchText = e.target.value;
     setOwnerSearch(searchText);
     if (searchText) {
-      setFilteredOwners(
-        owners.filter((owner) =>
-          owner.nme.toLowerCase().includes(searchText.toLowerCase())
-        )
-      );
+      const searchLower = searchText.toLowerCase();
+      const searchTerms = searchLower.split(" ").filter(Boolean);
+
+      const filtered = owners.filter((owner) => {
+        const ownerNameLower = owner.nme.toLowerCase();
+        const ownerFamNameLower = owner.fam_nme?.toLowerCase() || "";
+        const fullName = `${ownerNameLower} ${ownerFamNameLower}`;
+        const reversedFullName = `${ownerFamNameLower} ${ownerNameLower}`;
+
+        // Handle single search term (matches first or last name)
+        if (searchTerms.length === 1) {
+          return (
+            ownerNameLower.includes(searchLower) ||
+            ownerFamNameLower.includes(searchLower)
+          );
+        }
+
+        // Handle multiple search terms (e.g., "firstname lastname")
+        return (
+          fullName.includes(searchLower) ||
+          reversedFullName.includes(searchLower)
+        );
+      });
+      setFilteredOwners(filtered);
       setShowOwnerSuggestions(true);
     } else {
       setFilteredOwners([]);
@@ -400,7 +452,7 @@ export default function AnimalForm({
 
   const handleOwnerSelect = (owner: Owner) => {
     setFormData((prev) => ({ ...prev, propr_id: owner.id }));
-    setOwnerSearch(owner.nme);
+    setOwnerSearch(`${owner.nme} ${owner.fam_nme || ""}`.trim());
     setShowOwnerSuggestions(false);
     setFilteredOwners([]);
   };
@@ -420,6 +472,71 @@ export default function AnimalForm({
     }, 150); // 150ms delay
   };
 
+  const checkNumIdentUniqueness = async (ident: string) => {
+    if (!ident) {
+      setNumIdentError(null);
+      return;
+    }
+
+    // If editing and the number hasn't changed, it's valid for this animal.
+    if (isEditing && animal?.num_ident === ident) {
+      setNumIdentError(null);
+      return;
+    }
+
+    setIsCheckingNumIdent(true);
+    setNumIdentError(null);
+    try {
+      const { data, error } = await supabase
+        .from("tb_animals")
+        .select("id")
+        .eq("num_ident", ident)
+        .limit(1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setNumIdentError("Ce numéro d'identification est déjà utilisé.");
+      } else {
+        setNumIdentError(null); // It's unique
+      }
+    } catch (err) {
+      setNumIdentError("Erreur lors de la vérification du numéro.");
+    } finally {
+      setIsCheckingNumIdent(false);
+    }
+  };
+
+  const generateUniqueId = async () => {
+    setIsCheckingNumIdent(true);
+    let newId = "";
+    let isUnique = false;
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    while (!isUnique) {
+      newId = Array.from({ length: 15 }, () =>
+        chars.charAt(Math.floor(Math.random() * chars.length))
+      ).join("");
+
+      const { data } = await supabase
+        .from("tb_animals")
+        .select("id")
+        .eq("num_ident", newId);
+      if (data && data.length === 0) isUnique = true;
+    }
+    setFormData((prev) => ({ ...prev, num_ident: newId }));
+    setIsCheckingNumIdent(false);
+    setNumIdentError(null);
+  };
+
+  const generatePassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const newPassword = Array.from({ length: 11 }, () =>
+      chars.charAt(Math.floor(Math.random() * chars.length))
+    ).join("");
+    setFormData((prev) => ({ ...prev, password: newPassword }));
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
@@ -428,6 +545,12 @@ export default function AnimalForm({
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    if (numIdentError) {
+      setError("Veuillez corriger les erreurs avant de sauvegarder.");
+      setIsSaving(false);
+      return;
+    }
 
     const { id, ...submissionData } = {
       ...formData,
@@ -445,7 +568,8 @@ export default function AnimalForm({
 
       if (isEditing && animal) {
         // For updates, we use the submissionData as is
-        const { created_by_email, ...updateData } = submissionData;
+        const { created_by_email, owner, owner_name, ...updateData } =
+          submissionData;
         response = await supabase
           .from("tb_animals")
           .update(updateData)
@@ -453,7 +577,8 @@ export default function AnimalForm({
       } else {
         console.log("Submission Data:", submissionData);
         // For inserts, the `id` is already removed from submissionData
-        response = await supabase.from("tb_animals").insert([submissionData]);
+        const { owner, owner_name, ...insertData } = submissionData;
+        response = await supabase.from("tb_animals").insert([insertData]);
       }
 
       if (response.error) {
@@ -499,7 +624,128 @@ export default function AnimalForm({
   const handleNewOwnerSaved = async (newOwner: Owner) => {
     await onOwnerAdded(); // Refresh the owner list in the parent
     setFormData((prev) => ({ ...prev, propr_id: newOwner.id })); // Pre-select the new owner
+    setOwnerSearch(`${newOwner.nme} ${newOwner.fam_nme || ""}`.trim()); // Update the search input text
     setIsOwnerModalOpen(false);
+  };
+  const [ownerSearch, setOwnerSearch] = useState("");
+
+  const handleGenerateCertificate = () => {
+    if (!animal || !animal.id) {
+      alert("Veuillez d'abord enregistrer l'animal.");
+      return;
+    }
+
+    const selectedOwner = owners.find((o) => o.id === formData.propr_id);
+
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      // Render the React component to an HTML string
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Certificat d'Identification de l'Animal</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+            <style>
+              body {
+                background-color: #f3f4f6; /* bg-gray-100 */
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+              }
+              .page {
+                width: 210mm;
+                min-height: 297mm;
+                padding: 20mm;
+                margin: 1rem auto;
+                background: white;
+                box-shadow: 0 0 0.5cm rgba(0,0,0,0.5);
+                display: flex;
+                flex-direction: column;
+              }
+              .header {
+                padding-bottom: 1rem;
+                border-bottom: 2px solid #e5e7eb; /* border-gray-200 */
+                margin-bottom: 2rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              }
+              .content {
+                flex-grow: 1;
+              }
+              .footer {
+                padding-top: 1rem;
+                border-top: 1px solid #e5e7eb; /* border-gray-200 */
+                margin-top: 2rem;
+                font-size: 0.875rem; /* text-sm */
+                text-align: center;
+                color: #6b7280; /* text-gray-500 */
+              }
+              @media print {
+                body, .page {
+                  margin: 0;
+                  box-shadow: none;
+                  background: white;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="page">
+              <header class="header">
+                <div class="text-left">
+                  <h1 class="text-3xl font-bold text-gray-800">Certificat d'Identification</h1>
+                  <p class="text-md text-gray-500">Document Officiel</p>
+                </div>
+                <div class="w-24 h-24 bg-gray-200 flex items-center justify-center text-gray-400">
+                  Logo
+                </div>
+              </header>
+
+              <main class="content">
+                <section class="mb-8">
+                  <h2 class="text-xl font-semibold border-b-2 border-gray-300 pb-2 mb-4 text-gray-700">Informations sur le Propriétaire</h2>
+                  <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-gray-700">
+                    <p><strong>Nom Complet:</strong> ${selectedOwner ? `${selectedOwner.nme} ${selectedOwner.fam_nme}` : "N/A"}</p>
+                    <p><strong>Contact:</strong> ${selectedOwner?.tel || selectedOwner?.email || "N/A"}</p>
+                    <p class="col-span-2"><strong>Adresse:</strong> ${[selectedOwner?.adresse, selectedOwner?.city, selectedOwner?.wilaya, selectedOwner?.code_postal].filter(Boolean).join(", ") || "N/A"}</p>
+                  </div>
+                </section>
+
+                <section class="mb-8">
+                  <h2 class="text-xl font-semibold border-b-2 border-gray-300 pb-2 mb-4 text-gray-700">Informations sur l'Animal</h2>
+                  <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-gray-700">
+                    <p><strong>Nom:</strong> ${formData.nme || "N/A"}</p>
+                    <p><strong>Espèce:</strong> ${formData.espece || "N/A"}</p>
+                    <p><strong>Race:</strong> ${formData.race || "N/A"}</p>
+                    <p><strong>Sexe:</strong> ${formData.sexe || "N/A"}</p>
+                    <p><strong>Date de Naissance:</strong> ${formData.niss_date ? new Date(formData.niss_date).toLocaleDateString("fr-FR") : "N/A"}</p>
+                    <p><strong>Robe:</strong> ${formData.robe || "N/A"}</p>
+                  </div>
+                </section>
+
+                <section class="mb-8">
+                  <h2 class="text-xl font-semibold border-b-2 border-gray-300 pb-2 mb-4 text-gray-700">Identification et Sécurité</h2>
+                  <div class="grid grid-cols-2 gap-x-8 gap-y-4 bg-gray-50 p-4 rounded-lg">
+                    <p><strong>N° Identification:</strong> <span class="font-mono text-base">${formData.num_ident || "N/A"}</span></p>
+                    <p><strong>Mot de passe:</strong> <span class="font-mono text-base">${formData.password || "N/A"}</span></p>
+                  </div>
+                </section>
+              </main>
+
+              <footer class="footer">
+                <p>Certificat généré le ${new Date().toLocaleDateString("fr-FR")}.</p>
+                <p class="mt-2"><strong>Vétérinaire Traitant:</strong> ${user?.email || "Information non disponible"}</p>
+              </footer>
+            </div>
+            <script>
+              setTimeout(() => { window.print(); window.close(); }, 500);
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+    }
   };
 
   return (
@@ -586,18 +832,41 @@ export default function AnimalForm({
           <div>
             <label
               htmlFor="num_ident"
-              className="block text-sm font-medium text-gray-700"
+              className={`block text-sm font-medium ${
+                numIdentError ? "text-red-600" : "text-gray-700"
+              }`}
             >
               N° Identification
             </label>
-            <input
-              id="num_ident"
-              name="num_ident"
-              value={formData.num_ident || ""}
-              onChange={handleChange}
-              placeholder="N° Identification"
-              className="p-1 border rounded w-full"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                id="num_ident"
+                name="num_ident"
+                value={formData.num_ident || ""}
+                onChange={handleChange}
+                onBlur={handleNumIdentBlur}
+                placeholder="15 caractères alphanumériques"
+                className={`p-1 border rounded w-full ${
+                  numIdentError ? "border-red-500" : "border-gray-300"
+                }`}
+                maxLength={15}
+              />
+              <button
+                type="button"
+                onClick={() => void generateUniqueId()}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded flex-shrink-0"
+                title="Générer un numéro unique"
+                disabled={isCheckingNumIdent}
+              >
+                Générer
+              </button>
+            </div>
+            {isCheckingNumIdent && (
+              <p className="text-xs text-gray-500 mt-1">Vérification...</p>
+            )}
+            {numIdentError && (
+              <p className="text-xs text-red-600 mt-1">{numIdentError}</p>
+            )}
           </div>
           <div>
             <label
@@ -614,6 +883,33 @@ export default function AnimalForm({
               placeholder="N° Passeport"
               className="p-1 border rounded w-full"
             />
+          </div>
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Mot de passe
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                id="password"
+                name="password"
+                type="text"
+                value={formData.password || ""}
+                onChange={handleChange}
+                placeholder="Mot de passe (optionnel)"
+                className="p-1 border rounded w-full"
+              />
+              <button
+                type="button"
+                onClick={generatePassword}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded flex-shrink-0"
+                title="Générer un mot de passe"
+              >
+                Générer
+              </button>
+            </div>
           </div>
           <div>
             <label
@@ -646,7 +942,7 @@ export default function AnimalForm({
                             onClick={() => handleOwnerSelect(owner)}
                             className="px-3 py-2 cursor-pointer hover:bg-gray-100"
                           >
-                            {owner.nme}
+                            {owner.nme} {owner.fam_nme}
                           </li>
                         ))
                       ) : (
@@ -1026,7 +1322,7 @@ export default function AnimalForm({
 
         <div className="flex justify-between items-center gap-4 pt-4">
           <div>
-            {isEditing && (
+            {isEditing && role !== "Vétérinaire" && (
               <button
                 type="button"
                 onClick={() => void handleDelete()}
@@ -1034,6 +1330,16 @@ export default function AnimalForm({
                 disabled={isSaving || isDeleting}
               >
                 {isDeleting ? "Suppression..." : "Supprimer"}
+              </button>
+            )}
+            {isEditing && (
+              <button
+                type="button"
+                onClick={handleGenerateCertificate}
+                className="py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-400"
+                disabled={isSaving || isDeleting}
+              >
+                Générer Certificat
               </button>
             )}
           </div>
