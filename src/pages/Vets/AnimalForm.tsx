@@ -639,44 +639,120 @@ export default function AnimalForm({
 
     const selectedOwner = owners.find((o) => o.id === formData.propr_id);
     const certificateHTML = `
-    <div id="certificate-to-export" style="position: absolute; left: -9999px; width: 210mm; min-height: 297mm; background: white; padding: 0; font-family: sans-serif;">
-      <div style="padding-bottom: 1rem; border-bottom: 2px solid #e5e7eb; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; background-color: teal; color: white; padding: 1rem;">
-        <div style="text-align: center; width: 100%;">
-          <p style="font-size: 0.875rem;">République algérienne démocratique et populaire</p>
-          <p style="font-size: 0.875rem;">Ministère de l'Agriculture et du Développement Rural</p>
-          <p style="font-size: 0.875rem;">Fichier National d'Identification et Traçabilité Animale</p>
+    <div id="certificate-to-export" style="position: absolute; left: -9999px; width: 210mm; min-height: 297mm; background: white; padding: 10mm; font-family: Arial, sans-serif; font-size: 10pt; box-sizing: border-box; display: flex; flex-direction: column;">
+      <div style="flex-grow: 1;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5mm;">
+            <div style="width: 50%; padding-right: 5mm; color: #000;">
+                <p style="font-size: 8pt; margin-bottom: 1mm; color: #000;">RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE</p>
+                <p style="font-size: 10pt; font-weight: bold; margin: 0; color: #000;">MINISTÈRE DE L'AGRICULTURE ET DU DÉVELOPPEMENT RURAL</p>
+                <p style="font-size: 8pt; margin-top: 2mm; color: #000;">FICHIER NATIONAL D'IDENTIFICATION ET DE TRAÇABILITÉ ANIMALE (FNITA)</p>
+            </div>
+
+            <div style="width: 45%; text-align: right; color: #000;">
+                <div style="border: 2px solid #0D9488; padding: 1mm 3mm; background-color: #F0FDFA; display: inline-block;">
+                    <span style="font-size: 16pt; font-weight: bold; color: #0D9488;">FNITA</span>
+                </div>
+                <p style="font-size: 8pt; margin-top: 1mm; color: #000;">SOCIÉTÉ D'IDENTIFICATION DES CARNIVORES DOMESTIQUES</p>
+                <div style="margin-top: 2mm; background-color: #f0f0f0; padding: 2mm; border: 1px solid #ccc; color: #000;">
+                    <strong style="font-size: 12pt;">BARCODE:</strong> <span style="font-family: monospace;">${formData.num_ident || "--"}</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="border: 1px solid #ccc; margin-bottom: 5mm;">
+            <div style="background-color: #0D9488; color: black; padding: 2mm 5mm; font-size: 12pt; font-weight: bold; display: flex; align-items: center;">
+                DÉTENTEUR
+            </div>
+            <div style="padding: 3mm 5mm; color: #000;">
+                <p style="margin: 1mm 0; color: #000;"><strong>MME/M. ${selectedOwner ? `${selectedOwner.fam_nme || ""} ${selectedOwner.nme || ""}`.trim() : "--"}</strong></p>
+                <p style="margin: 1mm 0; color: #000;">${[selectedOwner?.adresse, selectedOwner?.city].filter(Boolean).join(", ") || "Adresse non spécifiée"}</p>
+                <p style="margin: 1mm 0; color: #000;"><strong>Wilaya/Province:</strong> ${selectedOwner?.wilaya || "--"} - <strong>CP:</strong> ${selectedOwner?.code_postal || "--"}</p>
+                <div style="display: flex; justify-content: space-between; margin-top: 3mm; border-top: 1px dotted #ccc; padding-top: 2mm;">
+                    <p style="margin: 1mm 0; color: #000;"><strong>TEL 1:</strong> ${selectedOwner?.tel || "--"}</p>
+                    <p style="margin: 1mm 0; color: #000;"><strong>E-MAIL:</strong> ${selectedOwner?.email || "--"}</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="border: 1px solid #ccc; margin-bottom: 5mm;">
+            <div style="background-color: #0D9488; color: black; padding: 2mm 5mm; font-size: 12pt; font-weight: bold;">
+                IDENTIFICATION DE L'ANIMAL
+            </div>
+            <div style="padding: 3mm 5mm; color: #000;">
+                <div style="background-color: #F0FDFA; padding: 2mm; margin-bottom: 3mm;">
+                    <strong style="color: #0D9488;">N° IDENTIFICATION (PUCE):</strong> <span style="font-family: monospace; font-size: 12pt;">${formData.num_ident || "--"}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <div style="width: 48%;">
+                        <p style="margin: 1mm 0; color: #000;"><strong>DATE d'Insert:</strong> ${new Date().toLocaleDateString("fr-FR")}</p>
+                        <p style="margin: 1mm 0; color: #000;"><strong>EMPLACEMENT:</strong> Gouttière Jugulaire</p>
+                        <p style="margin: 1mm 0; color: #000;"><strong>VÉTÉRINAIRE:</strong> ${user?.email || "--"}</p>
+                    </div>
+                    <div style="width: 48%;">
+                        <p style="margin: 1mm 0; color: #000;"><strong>TATOOAGE:</strong> --</p>
+                        <p style="margin: 1mm 0; color: #000;"><strong>DATE:</strong> --</p>
+                        <p style="margin: 1mm 0; color: #000;"><strong>MOT DE PASSE:</strong> ${formData.password || "--"}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="border: 1px solid #ccc; margin-bottom: 5mm;">
+            <div style="background-color: #0D9488; color: black; padding: 2mm 5mm; font-size: 12pt; font-weight: bold;">
+                DESCRIPTION DE L'ANIMAL
+            </div>
+            <div style="padding: 3mm 5mm; color: #000;">
+                <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+                    <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>ESPÈCE:</strong> ${formData.espece || "--"}</p>
+                    <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>SEXE:</strong> ${formData.sexe || "--"}</p>
+                    <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>STÉRILISÉ:</strong> Non</p>
+
+                    <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>DATE DE NAISSANCE:</strong> ${formData.niss_date ? new Date(formData.niss_date).toLocaleDateString("fr-FR") : "--"}</p>
+                    <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>RACE:</strong> ${formData.race || "--"}</p>
+                    <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>PAYS D'ORIGINE:</strong> ALGÉRIE</p>
+
+                    <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>ROBE:</strong> ${formData.robe || "--"}</p>
+                    <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>NOM D'USAGE:</strong> ${formData.nme || "--"}</p>
+                    <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>CATÉGORIE:</strong> --</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 5mm; font-size: 8pt; color: #555;">
+            <p>Ce document atteste de l'enregistrement de l'animal dans le Fichier National d'Identification et de Traçabilité Animale (FNITA).</p>
+            <p>Toute modification des informations (changement d'adresse, de détenteur, décès) doit être signalée au FNITA.</p>
         </div>
       </div>
-      <div style="padding-left: 15mm; padding-right: 15mm;">
-        <h1 style="text-align: center; padding-bottom: 1.25rem; font-size: 1.5rem; font-weight: bold; color: #1f2937;">Certificat d'Identification d'animal</h1>
-        <section style="margin-bottom: 2rem;">
-        <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 2px solid #d1d5db; padding-bottom: 0.5rem; margin-bottom: 1rem; color: #374151;">Informations sur le Propriétaire</h2>
-        <p style="color: #1f2937;"><strong>Nom Complet:</strong> ${selectedOwner ? `${selectedOwner.nme} ${selectedOwner.fam_nme}` : "N/A"}</p>
-        <p style="color: #1f2937;"><strong>Contact:</strong> ${selectedOwner?.tel || selectedOwner?.email || "N/A"}</p>
-        <p style="color: #1f2937;"><strong>Adresse:</strong> ${[selectedOwner?.adresse, selectedOwner?.city, selectedOwner?.wilaya, selectedOwner?.code_postal].filter(Boolean).join(", ") || "N/A"}</p>
-        </section>
-        <section style="margin-bottom: 2rem;">
-        <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 2px solid #d1d5db; padding-bottom: 0.5rem; margin-bottom: 1rem; color: #374151;">Informations sur l'Animal</h2>
-        <p style="color: #1f2937;"><strong>Nom:</strong> ${formData.nme || "N/A"}</p>
-        <p style="color: #1f2937;"><strong>Espèce:</strong> ${formData.espece || "N/A"}</p>
-        <p style="color: #1f2937;"><strong>Race:</strong> ${formData.race || "N/A"}</p>
-        <p style="color: #1f2937;"><strong>Sexe:</strong> ${formData.sexe || "N/A"}</p>
-        <p style="color: #1f2937;"><strong>Date de Naissance:</strong> ${formData.niss_date ? new Date(formData.niss_date).toLocaleDateString("fr-FR") : "N/A"}</p>
-        <p style="color: #1f2937;"><strong>Robe:</strong> ${formData.robe || "N/A"}</p>
-        </section>
-        <section style="margin-bottom: 2rem;">
-        <h2 style="font-size: 1.25rem; font-weight: 600; border-bottom: 2px solid #d1d5db; padding-bottom: 0.5rem; margin-bottom: 1rem; color: #374151;">Identification et Sécurité</h2>
-        <div style="background-color: #f9fafb; padding: 1rem; border-radius: 0.5rem;">
-          <p><strong>N° Identification:</strong> <span style="font-family: monospace; font-size: 1rem;">${formData.num_ident || "N/A"}</span></p>
-          <p><strong>Mot de passe:</strong> <span style="font-family: monospace; font-size: 1rem;">${formData.password || "N/A"}</span></p>
-        </div>
-        </section>
+
+      <div style="border: 2px solid #0f766e; margin-top: 10mm;">
+          <div style="background-color: #0f766e; color: black; padding: 2mm 5mm; font-size: 10pt; font-weight: bold; text-align: center;">
+              PARTIE BASSE DE LA CARTE D'IDENTIFICATION À DÉTACHER ET À CONSERVER AVEC VOUS
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 9pt;">
+              <thead>
+                  <tr style="background-color: #f0f0f0;">
+                      <th style="border: 1px solid #ccc; padding: 2mm; width: 40%; text-align: left; background-color: #ccfbf1; color: #000;">ANIMAL</th>
+                      <th style="border: 1px solid #ccc; padding: 2mm; width: 60%; text-align: left; background-color: #ccfbf1; color: #000;">DÉTENTEUR</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <tr>
+                      <td style="border: 1px solid #ccc; padding: 2mm; vertical-align: top; color: #000;">
+                          <strong>IDENTIFICATION:</strong> <span style="font-family: monospace;">${formData.num_ident || "--"}</span><br>
+                          <strong>NOM:</strong"> ${formData.nme || "--"}<br>
+                          <strong>NÉ(E) LE:</strong> ${formData.niss_date ? new Date(formData.niss_date).toLocaleDateString("fr-FR") : "--"}<br>
+                          <strong>RACE:</strong> ${formData.race || "--"}<br>
+                          <strong>ROBE:</strong> ${formData.robe || "--"}
+                      </td>
+                      <td style="border: 1px solid #ccc; padding: 2mm; vertical-align: top; color: #000;">
+                          <strong>MME/M. ${selectedOwner ? `${selectedOwner.fam_nme || ""} ${selectedOwner.nme || ""}`.trim() : "--"}</strong><br>
+                          ${[selectedOwner?.adresse, selectedOwner?.city].filter(Boolean).join(", ") || "Adresse non spécifiée"}<br>
+                          ${selectedOwner?.wilaya || "--"} - <strong>CP:</strong> ${selectedOwner?.code_postal || "--"}<br>
+                      </td>
+                  </tr>
+              </tbody>
+          </table>
       </div>
-      <div style="flex-grow: 1;"></div>
-      <footer style="padding-top: 1rem; padding-bottom: 1rem; border-top: 1px solid #e5e7eb; margin-top: 2rem; font-size: 0.875rem; text-align: center; color: white; background-color: teal;">
-        <p>Certificat généré le ${new Date().toLocaleDateString("fr-FR")}.</p>
-        <p style="margin-top: 0.5rem;"><strong>Vétérinaire Traitant:</strong> ${user?.email || "Information non disponible"}</p>
-      </footer>
     </div>
     `;
 
@@ -691,7 +767,7 @@ export default function AnimalForm({
     }
 
     const canvas = await html2canvas(certificateElement, {
-      scale: 2,
+      scale: 3, // Increased scale for better quality
       useCORS: true,
     });
     const imgData = canvas.toDataURL("image/png");
@@ -1287,7 +1363,7 @@ export default function AnimalForm({
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
         <div className="flex justify-between items-center gap-4 pt-4">
-          <div>
+          <div className="flex items-center gap-2">
             {isEditing && role !== "Vétérinaire" && (
               <button
                 type="button"

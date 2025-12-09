@@ -13,11 +13,11 @@ import { PgHeader2 } from "../../components/PgHeader2";
 
 type Animal = {
   id: string;
-  nme: string;
-  espece: string;
-  num_ident: string; // Added num_ident to Animal type
-  tb_props: { nme: string } | null;
-  qr_code_identifier: string;
+  nme: string | null;
+  espece: string | null;
+  num_ident: string | null;
+  tb_props: { nme: string | null } | null;
+  qr_code_identifier: string | null;
 };
 
 type Declaration = {
@@ -126,7 +126,6 @@ export default function DeclareDiseasePage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
-  const [isAnimalListOpen, setIsAnimalListOpen] = useState(false);
   const [foundAnimalInfo, setFoundAnimalInfo] = useState<Animal | null>(null);
 
   // History Table State
@@ -139,7 +138,6 @@ export default function DeclareDiseasePage() {
     // Reset animal search state on fetch
     setAnimalSearch("");
     setSelectedAnimal("");
-    setIsAnimalListOpen(false);
 
     setLoading(true);
     try {
@@ -157,7 +155,15 @@ export default function DeclareDiseasePage() {
         .eq("created_by_email", user.email);
       if (error) throw error;
 
-      setAnimals(data as Animal[]);
+      const processedData = (data || []).map((animal) => ({
+        ...animal,
+        // Supabase returns the related record as an object, ensure it's not an array
+        tb_props:
+          animal.tb_props && !Array.isArray(animal.tb_props)
+            ? animal.tb_props
+            : null,
+      }));
+      setAnimals(processedData as Animal[]);
     } catch (err: any) {
       setError(
         "Impossible de charger la liste des animaux. " + (err.message || "")
@@ -300,7 +306,6 @@ export default function DeclareDiseasePage() {
       setSuccessMessage("La maladie a été déclarée avec succès !");
       // Reset form
       setSelectedAnimal("");
-      setIsAnimalListOpen(false);
       setQrCodeInput("");
       setAnimalSearch("");
       setSelectedEspece("");

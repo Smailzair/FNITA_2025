@@ -18,6 +18,7 @@ type FilterOptions = {
 type Owner = {
   id: string;
   nme: string;
+  fam_nme: string; // Add missing property to match AnimalForm's expectation
 };
 
 export default function AdminAnimalsManage() {
@@ -81,7 +82,7 @@ export default function AdminAnimalsManage() {
     try {
       const { data, error: fetchError } = await supabase
         .from("tb_props")
-        .select("id, nme");
+        .select("id, nme, fam_nme"); // Fetch the fam_nme field
       if (fetchError) throw fetchError;
       setOwners(data || []);
     } catch (err) {

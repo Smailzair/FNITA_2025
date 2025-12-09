@@ -17,7 +17,7 @@ export default function ProtectedRoute({
   if (loading) {
     // You can show a loading spinner here
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center p-4 w-screen">
         Chargement...
       </div>
     );
