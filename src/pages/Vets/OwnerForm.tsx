@@ -177,7 +177,7 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
               value={formData.num_cni || ""}
               onChange={handleChange}
               placeholder="N° CNI"
-              className="p-1 border rounded w-full text-gray-900"
+              className="p-1 border rounded w-full text-gray-200"
             />
           </div>
           <div>
@@ -194,7 +194,7 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
               value={formData.email || ""}
               onChange={handleChange}
               placeholder="Email"
-              className="p-1 border rounded w-full text-gray-900"
+              className="p-1 border rounded w-full text-gray-200"
             />
           </div>
           <div>
@@ -211,7 +211,7 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
               value={formData.tel || ""}
               onChange={handleChange}
               placeholder="Téléphone"
-              className="p-1 border rounded w-full text-gray-900"
+              className="p-1 border rounded w-full text-gray-200"
             />
           </div>
           <div>
@@ -236,7 +236,7 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
               value={formData.city || ""}
               onChange={handleChange}
               placeholder="Cité"
-              className="p-1 border rounded w-full text-gray-900"
+              className="p-1 border rounded w-full text-gray-200"
             />
           </div>
           <div>
@@ -252,7 +252,7 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
               value={formData.code_postal || ""}
               onChange={handleChange}
               placeholder="Code Postal"
-              className="p-1 border rounded w-full text-gray-900"
+              className="p-1 border rounded w-full text-gray-200"
             />
           </div>
         </div>
@@ -268,7 +268,7 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
           value={formData.adresse || ""}
           onChange={handleChange}
           placeholder="Adresse"
-          className="p-1 border rounded w-full text-gray-900"
+          className="p-1 border rounded w-full text-gray-200"
         />
         <label
           htmlFor="descr"
@@ -282,7 +282,7 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
           value={formData.descr || ""}
           onChange={handleChange}
           placeholder="Description"
-          className="p-1 border rounded w-full text-gray-900"
+          className="p-1 border rounded w-full text-gray-200"
         />
 
         {error && <p className="text-red-400 text-sm">{error}</p>}
