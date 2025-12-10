@@ -48,7 +48,7 @@ export default function VetsDashboard() {
                 description="Signaler les cas de maladies à déclaration obligatoire."
               />
               <DashboardButton
-                to="/vets/animal-perdu"
+                to="/DeclareAnimalLost"
                 icon={<LostAnimalIcon />}
                 title="Signaler un Animal Perdu"
                 description="Aider à retrouver les animaux perdus en signalant un cas."

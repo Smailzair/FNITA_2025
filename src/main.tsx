@@ -22,6 +22,7 @@ import StatisticsPage from "./pages/Admins/StatisticsPage";
 import OwnersManage from "./pages/OwnersManage";
 import DeclareDiseasePage from "./pages/Vets/DeclareDiseasePage";
 import ManageDeclarations from "./pages/Admins/ManageDeclarations";
+import DeclareAnimalLost from "./pages/DeclareAnimalLost";
 
 // Define UserRole enum to avoid magic strings
 export const UserRole = {
@@ -46,7 +47,6 @@ if (container) {
           <Route path="/update_password" element={<UpdatePassword />} />
           <Route path="/userinfosupdate" element={<UserInfosUpdate />} />
           <Route path="/underdevelopment" element={<UnderDevelopment />} />
-          <Route path="/animalsmanage" element={<VetsAnimalsManage />} />
           {/* Protected Routes */}
           <Route
             path="/admindashboard"
@@ -127,6 +127,22 @@ if (container) {
                 allowedRoles={[UserRole.Adminis, UserRole.AyDroit]}
               >
                 <AyDroitDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/animalsmanage"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.Vet]}>
+                <VetsAnimalsManage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/DeclareAnimalLost"
+            element={
+              <ProtectedRoute>
+                <DeclareAnimalLost />
               </ProtectedRoute>
             }
           />

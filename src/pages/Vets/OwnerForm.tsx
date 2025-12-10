@@ -291,7 +291,7 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
           <button
             type="button"
             onClick={onClose}
-            className="py-2 px-4 bg-gray-400 rounded hover:bg-gray-500"
+            className="py-2 px-4 bg-red-600  rounded hover:bg-red-800 text-white disabled:bg-gray-300"
             disabled={isSaving}
           >
             Annuler

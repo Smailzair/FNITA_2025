@@ -328,7 +328,7 @@ export default function Register() {
                 className={"flex  w-72 items-center justify-end"}
                 title="Code de l'Autorité Vétérinaire Nationale"
               >
-                ANV :
+                AVN :
                 <input
                   className="m-1 rounded-md text-black pl-1 w-45 "
                   type="text"

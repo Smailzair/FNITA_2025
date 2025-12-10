@@ -1389,7 +1389,7 @@ export default function AnimalForm({
             <button
               type="button"
               onClick={onClose}
-              className="py-2 px-4 bg-gray-300 rounded hover:bg-gray-400"
+              className="py-2 px-4 bg-red-600  rounded hover:bg-red-800 text-white disabled:bg-gray-300"
               disabled={isSaving || isDeleting}
             >
               Annuler
