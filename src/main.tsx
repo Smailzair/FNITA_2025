@@ -23,6 +23,7 @@ import OwnersManage from "./pages/OwnersManage";
 import DeclareDiseasePage from "./pages/Vets/DeclareDiseasePage";
 import ManageDeclarations from "./pages/Admins/ManageDeclarations";
 import DeclareAnimalLost from "./pages/DeclareAnimalLost";
+import IdleTimer from "./components/IdleTimer";
 
 // Define UserRole enum to avoid magic strings
 export const UserRole = {
@@ -37,6 +38,7 @@ if (container) {
   root.render(
     <React.StrictMode>
       <BrowserRouter>
+        <IdleTimer />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Welcome />} />
