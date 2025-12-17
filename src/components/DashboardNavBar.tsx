@@ -53,6 +53,34 @@ const FoundAnimalIcon = () => (
   </svg>
 );
 
+const VaccineIcon = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M19.95 4.05c-2.25-2.25-5.89-2.25-8.14 0L4.05 11.81c-2.25 2.25-2.25 5.89 0 8.14 2.25 2.25 5.89 2.25 8.14 0l7.76-7.76c2.25-2.25 2.25-5.89 0-8.14zM11 18.17l-5.66-5.66 1.41-1.41 1.41 1.41 1.41-1.41 1.42 1.41 1.41-1.41 1.41 1.41L18.17 13l-7.17 5.17z" />
+  </svg>
+);
+
+const LabIcon = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M10.5 2a.5.5 0 0 1 .5.5V3h2V2.5a.5.5 0 0 1 1 0V3h2.293l-3.427 3.427A6.98 6.98 0 0 1 13 10.83V18h3.5a.5.5 0 0 1 0 1h-9a.5.5 0 0 1 0-1H11v-7.17a6.98 6.98 0 0 1 .134-4.403L7.707 3H10v-.5a.5.5 0 0 1 .5-.5zM8.414 4 11.414 7h1.172l3-3H13v.5a.5.5 0 0 1-1 0V4h-1.586zM12 8a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-3 5a3 3 0 1 1 6 0 3 3 0 0 1-6 0z"
+    />
+  </svg>
+);
+
 const MenuIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
     <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
@@ -67,6 +95,21 @@ const adminLinks = [
     to: "/ownersmanage",
     title: "Gestion des Propriétaires",
     icon: <OwnerIcon />,
+  },
+  {
+    to: "/admin/declarations",
+    title: "Gestion des Déclarations",
+    icon: <ReportDiseaseIcon />,
+  },
+  {
+    to: "/underdevelopment",
+    title: "Stock de vaccins",
+    icon: <VaccineIcon />,
+  },
+  {
+    to: "/underdevelopment",
+    title: "Laboratoires",
+    icon: <LabIcon />,
   },
   { to: "/stats", title: "Statistiques", icon: <StatsIcon /> },
 ];

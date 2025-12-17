@@ -8,7 +8,7 @@ export default function DeclareAnimalLost() {
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
           <h1 className="text-2xl font-bold text-center text-gray-800 mb-8">
-            Déclarer un animal perdu ou trouvé
+            Déclarer un animal perdu
           </h1>
           <form>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

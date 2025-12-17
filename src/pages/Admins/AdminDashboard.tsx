@@ -1,5 +1,5 @@
 import PgFooter from "../../components/PgFooter";
-import { PgHeader2 } from "../../components/PgHeader2";
+import { PgHeader2 } from "../../components/PgHeader2"; // Ensure this path is correct
 import DashboardButton from "../../components/DashboardButton";
 
 export default function AdminDashboard() {
@@ -31,16 +31,28 @@ export default function AdminDashboard() {
               description="Consulter et gérer les fiches des propriétaires."
             />
             <DashboardButton
-              to="/stats"
-              icon={<StatsIcon />}
-              title="Statistiques"
-              description="Visualiser les statistiques et les rapports d'activité."
-            />
-            <DashboardButton
               to="/admin/declarations"
               icon={<ReportDiseaseIcon />}
               title="Gestion des Déclarations"
               description="Suivre et gérer les déclarations de maladies."
+            />
+            <DashboardButton
+              to="/underdevelopment"
+              icon={<VaccineIcon />}
+              title="Stock de vaccins"
+              description="Gérer la distribution du stock de vaccins par wilaya."
+            />
+            <DashboardButton
+              to="/underdevelopment"
+              icon={<LabIcon />}
+              title="Laboratoires"
+              description=""
+            />
+            <DashboardButton
+              to="/stats"
+              icon={<StatsIcon />}
+              title="Statistiques"
+              description="Visualiser les statistiques et les rapports d'activité."
             />
           </div>
         </div>
@@ -92,5 +104,33 @@ const OwnerIcon = () => (
 const ReportDiseaseIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
     <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+  </svg>
+);
+
+const VaccineIcon = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M19.95 4.05c-2.25-2.25-5.89-2.25-8.14 0L4.05 11.81c-2.25 2.25-2.25 5.89 0 8.14 2.25 2.25 5.89 2.25 8.14 0l7.76-7.76c2.25-2.25 2.25-5.89 0-8.14zM11 18.17l-5.66-5.66 1.41-1.41 1.41 1.41 1.41-1.41 1.42 1.41 1.41-1.41 1.41 1.41L18.17 13l-7.17 5.17z" />
+  </svg>
+);
+
+const LabIcon = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M10.5 2a.5.5 0 0 1 .5.5V3h2V2.5a.5.5 0 0 1 1 0V3h2.293l-3.427 3.427A6.98 6.98 0 0 1 13 10.83V18h3.5a.5.5 0 0 1 0 1h-9a.5.5 0 0 1 0-1H11v-7.17a6.98 6.98 0 0 1 .134-4.403L7.707 3H10v-.5a.5.5 0 0 1 .5-.5zM8.414 4 11.414 7h1.172l3-3H13v.5a.5.5 0 0 1-1 0V4h-1.586zM12 8a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-3 5a3 3 0 1 1 6 0 3 3 0 0 1-6 0z"
+    />
   </svg>
 );
