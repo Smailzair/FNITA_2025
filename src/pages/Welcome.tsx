@@ -51,26 +51,7 @@ const ActionButton = ({
 );
 
 // Placeholder Icons
-const LostPetIcon = (props: SVGProps<SVGSVGElement>) => (
-  <svg
-    {...props}
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <g
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" />
-    </g>
-  </svg>
-);
-
-const FoundPetIcon = (props: SVGProps<SVGSVGElement>) => (
+const OwnerIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
     viewBox="0 0 24 24"
@@ -78,33 +59,20 @@ const FoundPetIcon = (props: SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
   >
     <path
-      d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM9 12l2 2 4-4"
+      d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-  </svg>
-);
-
-const IdentifyPetIcon = (props: SVGProps<SVGSVGElement>) => (
-  <svg
-    {...props}
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M15 4h2a2 2 0 012 2v12a2 2 0 01-2 2h-2M5 20H7a2 2 0 002-2V6a2 2 0 00-2-2H5"
+    <circle
+      cx="12"
+      cy="7"
+      r="4"
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"
-    />
-    <path
-      d="M12 4v16"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </svg>
 );
@@ -117,7 +85,30 @@ const VetsIcon = (props: SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
   >
     <path
-      d="M12 12.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM18.5 22a6.5 6.5 0 00-13 0"
+      d="M19 21v-2a4 4 0 0 0-4-4h-1"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M10 15H9a4 4 0 0 0-4 4v2"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" />
+    <path
+      d="M8 15v-1a4 4 0 0 1 8 0v1"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="12" cy="19" r="1" stroke="currentColor" strokeWidth="1.5" />
+    <path
+      d="M12 15v3"
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"
@@ -232,38 +223,26 @@ export default function Home() {
             </p>
             <div className="w-full max-w-sm">
               <ActionButton
-                to="/lost"
-                icon={LostPetIcon}
-                title="J'ai perdu mon animal"
-                subtitle="Déclarez la perte de votre animal et partagez sa fiche sur les réseaux sociaux."
-              />
-              <ActionButton
-                to="/found"
-                icon={FoundPetIcon}
-                title="J'ai trouvé un animal"
-                subtitle="Vous avez trouvé un animal ? Déclarez-le pour aider son propriétaire à le retrouver."
-              />
-              <ActionButton
-                to="/identify"
-                icon={IdentifyPetIcon}
-                title="Je fais identifier mon animal"
-                subtitle="L'identification est une étape clé de la protection animale. C'est un acte qui prouve la propriété de votre animal."
+                to="/detent/dashboard"
+                icon={OwnerIcon}
+                title="Espace Détenteur"
+                subtitle="Accès propriétaire : gérez vos animaux, déclarez une perte ou un décès, et accédez aux documents."
               />
 
               <hr className="my-4 border-white/40" />
-
-              <ActionButton
-                to="/aydroitdashboard"
-                icon={AyantDroitIcon}
-                title="Espace Ayant-Droit"
-                subtitle="Accès réservé aux forces de l'ordre, fourrières, et autres entités autorisées."
-              />
               <ActionButton
                 to="/vetsdashboard"
                 icon={VetsIcon}
                 title="Espace Vétérinaire"
                 subtitle="Accès réservé aux vétérinaires pour la gestion des identifications et des dossiers médicaux."
               />
+              <ActionButton
+                to="/aydroitdashboard"
+                icon={AyantDroitIcon}
+                title="Espace Ayant-Droit"
+                subtitle="Accès réservé aux forces de l'ordre, fourrières, et autres entités autorisées."
+              />
+
               <ActionButton
                 to="/admindashboard"
                 icon={AdminIcon}

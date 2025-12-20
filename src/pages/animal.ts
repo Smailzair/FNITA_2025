@@ -16,7 +16,7 @@ export type Animal = {
   radiat_reason: string | null;
   created_by_email: string | null;
   owner_name?: string | null; // From join
-  owner?: { nme: string } | null;
+  owner?: { fam_nme: string; nme: string } | null;
   qr_code_status: "none" | "requested" | "available" | null;
   qr_code_identifier: string | null;
   qr_code_request_date: string | null;

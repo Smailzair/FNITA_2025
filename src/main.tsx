@@ -1,7 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -24,6 +30,9 @@ import DeclareDiseasePage from "./pages/Vets/DeclareDiseasePage";
 import ManageDeclarations from "./pages/Admins/ManageDeclarations";
 import DeclareAnimalLost from "./pages/DeclareAnimalLost";
 import IdleTimer from "./components/IdleTimer";
+import ProtectedDetentRoute from "./ProtectedDetentRoute";
+import DetentLogin from "./pages/detent/DetentLogin";
+import DetentDashboard from "./pages/detent/DetentDashboard";
 
 // Define UserRole enum to avoid magic strings
 export const UserRole = {
@@ -38,7 +47,6 @@ if (container) {
   root.render(
     <React.StrictMode>
       <BrowserRouter>
-        <IdleTimer />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Welcome />} />
@@ -49,105 +57,123 @@ if (container) {
           <Route path="/update_password" element={<UpdatePassword />} />
           <Route path="/userinfosupdate" element={<UserInfosUpdate />} />
           <Route path="/underdevelopment" element={<UnderDevelopment />} />
-          {/* Protected Routes */}
+          <Route path="/detent/login" element={<DetentLogin />} />
           <Route
-            path="/admindashboard"
+            path="/detent/dashboard"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
-                <AdminDashboard />
-              </ProtectedRoute>
+              <ProtectedDetentRoute>
+                <DetentDashboard />
+              </ProtectedDetentRoute>
             }
           />
+          {/* Protected Routes with IdleTimer */}
           <Route
-            path="/managevets"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
-                <ManageUsers />
-              </ProtectedRoute>
+              <>
+                <IdleTimer />
+                <Outlet />
+              </>
             }
-          />
-          <Route
-            path="/edit-user"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
-                <EditUser />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/animals"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
-                <AdminAnimalsManage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/declarations"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
-                <ManageDeclarations />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/stats"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
-                <StatisticsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/ownersmanage"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.Adminis, UserRole.Vet]}>
-                <OwnersManage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vetsdashboard"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.Adminis, UserRole.Vet]}>
-                <VetsDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vets/declarer-maladie"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.Vet]}>
-                <DeclareDiseasePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/aydroitdashboard"
-            element={
-              <ProtectedRoute
-                allowedRoles={[UserRole.Adminis, UserRole.AyDroit]}
-              >
-                <AyDroitDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/animalsmanage"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.Vet]}>
-                <VetsAnimalsManage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/DeclareAnimalLost"
-            element={
-              <ProtectedRoute>
-                <DeclareAnimalLost />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route
+              path="/admindashboard"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/managevets"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                  <ManageUsers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/edit-user"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                  <EditUser />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/animals"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                  <AdminAnimalsManage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/declarations"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                  <ManageDeclarations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stats"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                  <StatisticsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ownersmanage"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.Adminis, UserRole.Vet]}>
+                  <OwnersManage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vetsdashboard"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.Adminis, UserRole.Vet]}>
+                  <VetsDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vets/declarer-maladie"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.Vet]}>
+                  <DeclareDiseasePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/aydroitdashboard"
+              element={
+                <ProtectedRoute
+                  allowedRoles={[UserRole.Adminis, UserRole.AyDroit]}
+                >
+                  <AyDroitDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/animalsmanage"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.Vet]}>
+                  <VetsAnimalsManage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/DeclareAnimalLost"
+              element={
+                <ProtectedRoute>
+                  <DeclareAnimalLost />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
           {/* Fallback Route */}
           <Route
             path="*"
