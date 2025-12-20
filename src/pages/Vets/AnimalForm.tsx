@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { supabase } from "../../api/supabaseClient";
+import { getUserByEmail, supabase } from "../../api/supabaseClient";
 import type { Animal } from "../animal";
 import { useAuth } from "../../hooks/useAuth";
 import OwnerForm from "./OwnerForm";
@@ -636,7 +636,9 @@ export default function AnimalForm({
       alert("Veuillez d'abord enregistrer l'animal.");
       return;
     }
-
+    const veter_infos = await getUserByEmail(
+      formData.created_by_email as string
+    );
     const selectedOwner = owners.find((o) => o.id === formData.propr_id);
     const certificateHTML = `
     <div id="certificate-to-export" style="position: absolute; left: -9999px; width: 210mm; min-height: 297mm; background: white; padding: 10mm; font-family: Arial, sans-serif; font-size: 10pt; box-sizing: border-box; display: flex; flex-direction: column;">
@@ -685,8 +687,8 @@ export default function AnimalForm({
                 <div style="display: flex; justify-content: space-between;">
                     <div style="width: 48%;">
                         <p style="margin: 1mm 0; color: #000;"><strong>DATE d'Insert:</strong> ${new Date().toLocaleDateString("fr-FR")}</p>
-                        <p style="margin: 1mm 0; color: #000;"><strong>EMPLACEMENT:</strong> Gouttière Jugulaire</p>
-                        <p style="margin: 1mm 0; color: #000;"><strong>VÉTÉRINAIRE:</strong> ${user?.email || "--"}</p>
+                        <p style="margin: 1mm 0; color: #000;"><strong>EMPLACEMENT:</strong> --</p>
+                        <p style="margin: 1mm 0; color: #000;"><strong>VÉTÉRINAIRE:</strong> ${veter_infos ? `${veter_infos?.fam_nme}${" "}${veter_infos?.nme || `${formData?.created_by_email || "--"}`}` : "--"}</p>
                     </div>
                     <div style="width: 48%;">
                         <p style="margin: 1mm 0; color: #000;"><strong>TATOOAGE:</strong> --</p>
@@ -705,7 +707,7 @@ export default function AnimalForm({
                 <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
                     <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>ESPÈCE:</strong> ${formData.espece || "--"}</p>
                     <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>SEXE:</strong> ${formData.sexe || "--"}</p>
-                    <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>STÉRILISÉ:</strong> Non</p>
+                    <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>STÉRILISÉ:</strong> --</p>
 
                     <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>DATE DE NAISSANCE:</strong> ${formData.niss_date ? new Date(formData.niss_date).toLocaleDateString("fr-FR") : "--"}</p>
                     <p style="width: 30%; margin: 1mm 0; color: #000;"><strong>RACE:</strong> ${formData.race || "--"}</p>

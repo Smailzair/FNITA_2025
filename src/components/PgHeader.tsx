@@ -9,7 +9,7 @@ export const PgHeader = () => {
       <div className="mx-auto max-sm:ml-0 max-md:ml-2 ml-8 ">
         <div className="relative flex h-20 items-center justify-between">
           <div
-            className="flex flex-grow items-center justify-center sm:justify-star"
+            className="flex grow items-center justify-center sm:justify-star"
             onMouseLeave={() => Setdrollmenue(false)}
           >
             <div className="items-center min-w-fit ml-1">
