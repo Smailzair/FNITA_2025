@@ -10,7 +10,7 @@ export default function DetentLogin() {
   const [password, setPassword] = useState("");
   const [captchaCode, setCaptchaCode] = useState("");
   const [captchaData, setCaptchaData] = useState<
-    { char: string; rotate: number }[]
+    { char: string; rotate: number; size: number; yOffset: number }[]
   >([]);
   const [captchaInput, setCaptchaInput] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -28,7 +28,12 @@ export default function DetentLogin() {
     for (let i = 0; i < 5; i++) {
       const char = chars.charAt(Math.floor(Math.random() * chars.length));
       result += char;
-      newData.push({ char, rotate: Math.floor(Math.random() * 60) - 30 });
+      newData.push({
+        char,
+        rotate: Math.floor(Math.random() * 60) - 30,
+        size: Math.floor(Math.random() * 12) + 24,
+        yOffset: Math.floor(Math.random() * 10) - 5,
+      });
     }
     setCaptchaCode(result);
     setCaptchaData(newData);
@@ -192,13 +197,21 @@ export default function DetentLogin() {
                   Code de sécurité
                 </label>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="bg-gray-200 px-4 py-2 rounded-md font-mono text-lg font-bold text-gray-600 select-none flex gap-2">
+                  <div
+                    className="bg-gray-200 px-4 py-2 rounded-md font-mono font-bold text-gray-600 select-none flex items-center justify-center overflow-hidden relative w-48 h-16 border border-gray-300"
+                    style={{
+                      backgroundImage:
+                        "repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px)",
+                    }}
+                  >
                     {captchaData.map((item, index) => (
                       <span
                         key={index}
                         style={{
-                          transform: `rotate(${item.rotate}deg)`,
+                          transform: `rotate(${item.rotate}deg) translateY(${item.yOffset}px)`,
+                          fontSize: `${item.size}px`,
                           display: "inline-block",
+                          margin: "0 0.2px",
                         }}
                       >
                         {item.char}

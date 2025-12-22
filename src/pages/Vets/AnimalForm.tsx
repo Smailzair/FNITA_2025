@@ -146,12 +146,7 @@ const raceByEspece: Record<string, string[]> = {
   Camélidé: [],
 };
 
-const radiationReasons = [
-  "Décès",
-  "Vente",
-  "Perdu",
-  "Retrouvé par propriétaire",
-];
+const radiationReasons = ["Décès", "Vente", "Perdu"];
 
 type AnimalFormProps = {
   animal: Partial<Animal> | null;

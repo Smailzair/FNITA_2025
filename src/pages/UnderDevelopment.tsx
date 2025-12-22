@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import PgFooter from "../components/PgFooter";
-import { PgHeader2 } from "../components/PgHeader2";
+import { PgHeader } from "../components/PgHeader";
 
 const ConstructionIcon = () => (
   <svg
@@ -54,7 +54,7 @@ export default function UnderDevelopment() {
 
   return (
     <div className="flex flex-col w-screen h-screen">
-      <PgHeader2 />
+      <PgHeader />
       <div className="flex flex-col justify-center items-center h-[calc(100vh-7.25rem)] w-full bg-gray-50">
         <div className="flex flex-col justify-center items-center text-center p-8 border border-yellow-300 rounded-lg bg-yellow-50 shadow-md max-w-lg mx-4">
           <ConstructionIcon />

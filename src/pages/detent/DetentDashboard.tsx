@@ -338,7 +338,7 @@ adresse`
         {/* Semi-transparent white overlay */}
         <div
           style={{
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
             padding: "20px",
             borderRadius: "8px",
           }}
@@ -398,6 +398,49 @@ adresse`
                 />
               </div>
             </div>
+
+            {/* Animal Situation Status */}
+            {!loading && animalData && animalData.is_radiated && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8 rounded shadow-sm">
+                <div className="flex">
+                  <div className="shrink-0">
+                    <svg
+                      className="h-5 w-5 text-red-400"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-lg font-medium text-red-800">
+                      Situation de l'animal
+                    </h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <p>
+                        <span className="font-bold">Statut :</span> Radié
+                      </p>
+                      <p>
+                        <span className="font-bold">Motif :</span>{" "}
+                        {animalData.radiat_reason || "Non spécifié"}
+                      </p>
+                      <p>
+                        <span className="font-bold">Date :</span>{" "}
+                        {animalData.radiat_date
+                          ? new Date(animalData.radiat_date).toLocaleDateString(
+                              "fr-FR"
+                            )
+                          : "-"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Animal Details Area */}
             {!loading && animalData && (
@@ -465,6 +508,46 @@ adresse`
                         </p>
                       </div>
                     </div>
+                    {VeterinaryData && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-teal-700 mb-4 flex items-center">
+                          <span className="mr-2">⚕️</span> Informations
+                          Vétérinaire
+                        </h3>
+                        <div className="space-y-3 text-gray-700">
+                          <p>
+                            <span className="font-medium text-gray-900">
+                              Vétérinaire :
+                            </span>{" "}
+                            {VeterinaryData.fam_nme} {VeterinaryData.nme}
+                          </p>
+                          <p>
+                            <span className="font-medium text-gray-900">
+                              Téléphone :
+                            </span>{" "}
+                            {VeterinaryData.phone || "-"}
+                          </p>
+                          <p>
+                            <span className="font-medium text-gray-900">
+                              Email :
+                            </span>{" "}
+                            {VeterinaryData.email || "-"}
+                          </p>
+                          <p>
+                            <span className="font-medium text-gray-900">
+                              Adresse :
+                            </span>{" "}
+                            {[
+                              VeterinaryData.adresse,
+                              VeterinaryData.city,
+                              VeterinaryData.wilaya,
+                            ]
+                              .filter(Boolean)
+                              .join(", ") || "-"}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -326,7 +326,18 @@ export default function AnimalsManage() {
           .in("id", selectedAnimalIds);
 
         if (error) throw error;
-
+        // -------- Also delete associated interventions
+        try {
+          await supabase
+            .from("tb_lost_animals")
+            .delete()
+            .in("animal_id", selectedAnimalIds);
+        } catch (err: any) {
+          console.error(
+            "Erreur lors de la suppression des interventions associées:",
+            err.message
+          );
+        }
         setSelectedAnimalIds([]); // Clear selection
         fetchAnimals(); // Refresh data
       } catch (err: any) {
