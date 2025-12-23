@@ -18,6 +18,7 @@ export default function DeclareAnimalLost() {
   const [lostDate, setLostDate] = useState(
     new Date().toISOString().split("T")[0]
   );
+  const [description, setDescription] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -73,31 +74,32 @@ export default function DeclareAnimalLost() {
     // If animal is already radiated, show a confirmation dialog
     if (foundAnimal.is_radiated === true) {
       const proceed = window.confirm(
-        `Attention : Cet animal est déjà marqué comme "${foundAnimal.radiat_reason}". Déclarer un animal décédé comme "Perdu" écrasera son statut actuel. Voulez-vous continuer ?`
+        `Attention : Cet animal est déjà radié ! (comme '"${foundAnimal.radiat_reason}"'). Voulez-vous continuer ?`
       );
       if (!proceed) {
         return;
       }
     }
 
-    // Form submission logic to update the animal status
-    const { error: updateError } = await supabase
-      .from("tb_animals")
-      .update({
-        is_radiated: true,
-        radiat_reason: "Perdu",
-        radiat_date: lostDate,
-      })
-      .eq("id", foundAnimal.id);
+    const { data: userData } = await supabase.auth.getUser();
 
-    if (updateError) {
-      alert(`Erreur lors de la mise à jour: ${updateError.message}`);
+    const { error: insertError } = await supabase
+      .from("tb_lost_animals")
+      .insert({
+        created_by_user_id: userData.user?.id,
+        lost_date: lostDate,
+        animal_id: foundAnimal.id,
+        descr: description,
+      });
+    if (insertError) {
+      alert(`Erreur lors de l'insertion: ${insertError.message}`);
     } else {
       alert("La déclaration de perte a été enregistrée avec succès !");
       // Reset form
       setIdentifier("");
       setFoundAnimal(null);
       setLostDate(new Date().toISOString().split("T")[0]);
+      setDescription("");
       setError(null);
     }
   };
@@ -124,7 +126,11 @@ export default function DeclareAnimalLost() {
                   type="text"
                   id="animal-id"
                   value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
+                  onChange={(e) => {
+                    setIdentifier(e.target.value);
+                    setFoundAnimal(null);
+                    setError(null);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -185,6 +191,27 @@ export default function DeclareAnimalLost() {
                     ? `${foundAnimal.owner.fam_nme} ${foundAnimal.owner.nme}`
                     : "Non renseigné"}
                 </p>
+                {foundAnimal.is_radiated && (
+                  <div className="mt-4 bg-orange-100 border-l-4 border-orange-500 p-4 rounded shadow-sm">
+                    <h4 className="font-bold text-orange-900">
+                      Ce animal est radié !
+                    </h4>
+                    <div className="mt-2 text-sm text-orange-800">
+                      <p>
+                        <span className="font-semibold">Date :</span>{" "}
+                        {foundAnimal.radiat_date
+                          ? new Date(
+                              foundAnimal.radiat_date
+                            ).toLocaleDateString("fr-FR")
+                          : "-"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Motif :</span>{" "}
+                        {foundAnimal.radiat_reason || "-"}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -207,6 +234,23 @@ export default function DeclareAnimalLost() {
                     onClick={(e) => e.currentTarget.showPicker()}
                     required
                     className="mt-1 block w-full px-3 py-2 border text-black border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="description"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Description / Circonstances
+                  </label>
+                  <textarea
+                    id="description"
+                    rows={4}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 text-black border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="Décrivez les circonstances de la perte..."
                   />
                 </div>
 

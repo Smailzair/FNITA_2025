@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { sendPasswordResetEmail, supabase } from "../api/supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
 import { PgHeader } from "../components/PgHeader";
@@ -8,6 +8,7 @@ type LoginError =
   | "wrong-password"
   | "email-not-found"
   | "email-not-confirmed"
+  | "wrong-captcha"
   | null;
 
 export default function Login() {
@@ -17,6 +18,12 @@ export default function Login() {
     email: "",
     password: "",
   });
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [captchaCode, setCaptchaCode] = useState("");
+  const [captchaData, setCaptchaData] = useState<
+    { char: string; rotate: number; size: number; yOffset: number }[]
+  >([]);
+  const [captchaInput, setCaptchaInput] = useState("");
 
   const [resetSent, setResetSent] = useState(false);
   const [resetErrMsg, setResetErrMsg] = useState("");
@@ -35,10 +42,46 @@ export default function Login() {
     clearErrors();
   };
 
+  const generateCaptcha = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let result = "";
+    const newData = [];
+    for (let i = 0; i < 5; i++) {
+      const char = chars.charAt(Math.floor(Math.random() * chars.length));
+      result += char;
+      newData.push({
+        char,
+        rotate: Math.floor(Math.random() * 60) - 30,
+        size: Math.floor(Math.random() * 12) + 24,
+        yOffset: Math.floor(Math.random() * 10) - 5,
+      });
+    }
+    setCaptchaCode(result);
+    setCaptchaData(newData);
+  };
+
+  useEffect(() => {
+    if (loginAttempts >= 3) {
+      generateCaptcha();
+      const interval = setInterval(generateCaptcha, 20000);
+      return () => clearInterval(interval);
+    }
+  }, [loginAttempts >= 3]);
+
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     clearErrors();
+
+    if (loginAttempts >= 3) {
+      if (captchaInput.toUpperCase() !== captchaCode) {
+        setError("wrong-captcha");
+        setLoading(false);
+        generateCaptcha();
+        setCaptchaInput("");
+        return;
+      }
+    }
 
     // First, check if the email exists in the public profile table.
     const { data: existingUser, error: fetchError } = await supabase
@@ -50,6 +93,7 @@ export default function Login() {
     // If no user is found with that email, set an error and stop.
     if (fetchError || !existingUser) {
       setError("email-not-found");
+      setLoginAttempts((prev) => prev + 1);
       setLoading(false);
       return;
     }
@@ -68,6 +112,7 @@ export default function Login() {
       } else if (signInError.message === "Invalid login credentials") {
         // Since we've confirmed the email exists, this error must mean the password is wrong.
         setError("wrong-password");
+        setLoginAttempts((prev) => prev + 1);
       }
     } else {
       // ALWAYS check the database for the `validated` status.
@@ -212,6 +257,54 @@ export default function Login() {
                 ></path>
               </svg>
             </li>
+
+            {loginAttempts >= 3 && (
+              <li className="flex flex-col items-end mt-2 w-full">
+                <div className="flex flex-row items-center justify-end gap-2 mb-1 mr-1">
+                  <div
+                    className="bg-gray-200 px-2 py-1 rounded-md font-mono font-bold text-gray-600 select-none flex items-center justify-center overflow-hidden relative w-32 h-10 border border-gray-300"
+                    style={{
+                      backgroundImage:
+                        "repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px)",
+                    }}
+                  >
+                    {captchaData.map((item, index) => (
+                      <span
+                        key={index}
+                        style={{
+                          transform: `rotate(${item.rotate}deg) translateY(${item.yOffset}px)`,
+                          fontSize: `${item.size * 0.8}px`,
+                          display: "inline-block",
+                          margin: "0 2px",
+                        }}
+                      >
+                        {item.char}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={generateCaptcha}
+                    className="text-xs text-blue-300 hover:text-blue-100 hover:underline"
+                  >
+                    Actualiser
+                  </button>
+                </div>
+                <div className="flex flex-row justify-end items-center">
+                  <span>Code : </span>
+                  <input
+                    className={`m-1 rounded-md text-black pl-1 ${
+                      error === "wrong-captcha" ? "bg-red-400" : "bg-gray-300"
+                    }`}
+                    type="text"
+                    value={captchaInput}
+                    onChange={(e) => setCaptchaInput(e.target.value)}
+                    placeholder="Code"
+                    required
+                  />
+                </div>
+              </li>
+            )}
           </ul>
 
           <div className="flex flex-row justify-end items-center w-full">
@@ -263,6 +356,11 @@ export default function Login() {
                   <br />
                   avant de vous connecter.
                 </h1>
+              )}
+              {error === "wrong-captcha" && (
+                <p className="text-red-400 text-center text-xs font-semibold mr-4">
+                  Code de sécurité incorrect.
+                </p>
               )}
             </div>
 

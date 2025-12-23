@@ -34,6 +34,11 @@ export default function Register() {
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [message, setMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [captchaCode, setCaptchaCode] = useState("");
+  const [captchaData, setCaptchaData] = useState<
+    { char: string; rotate: number; size: number; yOffset: number }[]
+  >([]);
+  const [captchaInput, setCaptchaInput] = useState("");
 
   const navigate = useNavigate();
 
@@ -61,6 +66,31 @@ export default function Register() {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
+  const generateCaptcha = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let result = "";
+    const newData = [];
+    for (let i = 0; i < 5; i++) {
+      const char = chars.charAt(Math.floor(Math.random() * chars.length));
+      result += char;
+      newData.push({
+        char,
+        rotate: Math.floor(Math.random() * 60) - 30,
+        size: Math.floor(Math.random() * 12) + 24,
+        yOffset: Math.floor(Math.random() * 10) - 5,
+      });
+    }
+    setCaptchaCode(result);
+    setCaptchaData(newData);
+  };
+
+  useEffect(() => {
+    generateCaptcha();
+    const interval = setInterval(generateCaptcha, 120000); // 2 minutes
+    return () => clearInterval(interval);
+  }, []);
+
   async function HandleSubmit(
     event: FormEvent<HTMLFormElement>
   ): Promise<void> {
@@ -68,6 +98,11 @@ export default function Register() {
     setLoading(true);
 
     // --------------------------------------------------------
+    if (captchaInput.toUpperCase() !== captchaCode) {
+      setLoading(false);
+      setMessage("Error: Code de sécurité incorrect");
+      return;
+    }
     if (formData.password.search(/\s/) !== -1) {
       setLoading(false);
       setPasswordError("bg-red-400");
@@ -539,6 +574,50 @@ export default function Register() {
                 <div className="mt-4 animate-spin h-10 w-10 border-2 border-t-blue-500 border-gray-200 rounded-full mx-auto" />
               </>
             )}
+          </div>
+
+          <div className="flex flex-col items-center justify-center w-full mt-2 border-t-2 border-gray-400 pt-2">
+            <div className="flex items-center gap-2 mb-2">
+              <div
+                className="bg-gray-200 px-4 py-2 rounded-md font-mono font-bold text-gray-600 select-none flex items-center justify-center overflow-hidden relative w-40 h-12 border border-gray-300"
+                style={{
+                  backgroundImage:
+                    "repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px)",
+                }}
+              >
+                {captchaData.map((item, index) => (
+                  <span
+                    key={index}
+                    style={{
+                      transform: `rotate(${item.rotate}deg) translateY(${item.yOffset}px)`,
+                      fontSize: `${item.size * 0.8}px`,
+                      display: "inline-block",
+                      margin: "0 1px",
+                    }}
+                  >
+                    {item.char}
+                  </span>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={generateCaptcha}
+                className="text-xs text-blue-300 hover:text-blue-100 hover:underline"
+              >
+                Actualiser
+              </button>
+            </div>
+            <label className="flex text-orange-200 items-center justify-center">
+              Code de sécurité :
+              <input
+                className="m-1 rounded-md text-black pl-1 w-32"
+                type="text"
+                value={captchaInput}
+                onChange={(e) => setCaptchaInput(e.target.value)}
+                placeholder="Code"
+                required
+              />
+            </label>
           </div>
 
           <div className="row w-full flex justify-center ">
