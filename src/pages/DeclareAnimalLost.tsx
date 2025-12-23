@@ -12,6 +12,19 @@ import type { Animal } from "./animal";
 
 type AnimalFormData = Partial<Animal>;
 
+const speciesImageFiles: Record<string, string> = {
+  Canine: "Canine.png",
+  Feline: "Feline.png",
+  Equine: "Equine.png",
+  Ovine: "Ovine.png",
+  Caprine: "Caprine.png",
+  Oiseaux: "Oiseaux.png",
+  Reptile: "Reptile.png",
+  Rongeur: "Rongeur.png",
+  Bovine: "Bovine.png",
+  Camélidé: "Camélidé.png",
+};
+
 export default function DeclareAnimalLost() {
   const [identifier, setIdentifier] = useState("");
   const [foundAnimal, setFoundAnimal] = useState<AnimalFormData | null>(null);
@@ -22,12 +35,62 @@ export default function DeclareAnimalLost() {
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const [myDeclarations, setMyDeclarations] = useState<any[]>([]);
+  const [filterText, setFilterText] = useState("");
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "found" | "not_found"
+  >("all");
+  const [existingDeclaration, setExistingDeclaration] = useState<any | null>(
+    null
+  );
 
   useEffect(() => {
     if (foundAnimal) {
       dateInputRef.current?.focus();
     }
   }, [foundAnimal]);
+
+  useEffect(() => {
+    void fetchDeclarations();
+  }, []);
+
+  const fetchDeclarations = async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData.user) {
+      // 1. Fetch declarations first (without join)
+      const { data: declarations, error: declError } = await supabase
+        .from("tb_lost_animals")
+        .select("*")
+        .eq("created_by_user_id", userData.user.id)
+        .order("lost_date", { ascending: false });
+
+      if (declError || !declarations) return;
+
+      // 2. Collect animal IDs
+      const animalIds = declarations
+        .map((d) => d.animal_id)
+        .filter((id) => id); // Filter out nulls
+
+      // 3. Fetch animal details manually
+      let animalsMap: Record<string, any> = {};
+      if (animalIds.length > 0) {
+        const { data: animals } = await supabase
+          .from("tb_animals")
+          .select("id, nme, espece, sexe, num_ident, qr_code_identifier")
+          .in("id", animalIds);
+
+        animals?.forEach((a) => (animalsMap[a.id] = a));
+      }
+
+      // 4. Merge data
+      const mergedData = declarations.map((d) => ({
+        ...d,
+        animal: animalsMap[d.animal_id] || null,
+      }));
+
+      setMyDeclarations(mergedData);
+    }
+  };
 
   const handleSearch = async (e: FormEvent | KeyboardEvent) => {
     e.preventDefault();
@@ -38,6 +101,7 @@ export default function DeclareAnimalLost() {
     setIsSearching(true);
     setError(null);
     setFoundAnimal(null);
+    setExistingDeclaration(null);
 
     try {
       const { data, error: dbError } = await supabase
@@ -54,6 +118,18 @@ export default function DeclareAnimalLost() {
 
       if (data) {
         setFoundAnimal(data);
+
+        // Check for existing active lost declaration
+        const { data: lostData } = await supabase
+          .from("tb_lost_animals")
+          .select("*")
+          .eq("animal_id", data.id)
+          .eq("is_found", false)
+          .limit(1);
+
+        if (lostData && lostData.length > 0) {
+          setExistingDeclaration(lostData[0]);
+        }
       } else {
         setError("Aucun animal trouvé avec cet identifiant.");
       }
@@ -98,10 +174,52 @@ export default function DeclareAnimalLost() {
       // Reset form
       setIdentifier("");
       setFoundAnimal(null);
+      setExistingDeclaration(null);
       setLostDate(new Date().toISOString().split("T")[0]);
       setDescription("");
       setError(null);
+      void fetchDeclarations();
     }
+  };
+
+  const filteredDeclarations = myDeclarations.filter((decl) => {
+    const search = filterText.toLowerCase();
+    const animalName = decl.animal?.nme?.toLowerCase() || "";
+    const animalIdent = decl.animal?.num_ident?.toLowerCase() || "";
+    const animalSpecies = decl.animal?.espece?.toLowerCase() || "";
+    const animalQr = decl.animal?.qr_code_identifier?.toLowerCase() || "";
+
+    const matchesText =
+      animalName.includes(search) ||
+      animalIdent.includes(search) ||
+      animalSpecies.includes(search) ||
+      animalQr.includes(search);
+
+    const matchesStatus =
+      filterStatus === "all"
+        ? true
+        : filterStatus === "found"
+        ? decl.is_found
+        : !decl.is_found;
+
+    return matchesText && matchesStatus;
+  });
+
+  const getAnimalIcon = (species: string | undefined) => {
+    const imageName =
+      species && speciesImageFiles[species] ? speciesImageFiles[species] : null;
+
+    if (!imageName) {
+      return null;
+    }
+
+    return (
+      <img
+        src={`/Anims/${imageName}`}
+        alt={species || "Animal"}
+        className="w-8 h-8 object-contain"
+      />
+    );
   };
 
   return (
@@ -129,6 +247,7 @@ export default function DeclareAnimalLost() {
                   onChange={(e) => {
                     setIdentifier(e.target.value);
                     setFoundAnimal(null);
+                    setExistingDeclaration(null);
                     setError(null);
                   }}
                   onKeyDown={(e) => {
@@ -215,8 +334,40 @@ export default function DeclareAnimalLost() {
               </div>
             )}
 
+            {/* Existing Declaration Warning */}
+            {foundAnimal && existingDeclaration && (
+              <div className="p-4 border rounded-md bg-yellow-50 border-yellow-200 text-yellow-800 mt-4">
+                <div className="flex items-center">
+                  <svg
+                    className="w-6 h-6 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    ></path>
+                  </svg>
+                  <h3 className="font-bold text-lg">
+                    Cet animal est déjà déclaré perdu
+                  </h3>
+                </div>
+                <p className="mt-2 ml-8">
+                  Une déclaration est déjà active pour cet animal depuis le{" "}
+                  <span className="font-semibold">
+                    {new Date(existingDeclaration.lost_date).toLocaleDateString()}
+                  </span>
+                  .
+                </p>
+              </div>
+            )}
+
             {/* Additional Fields */}
-            {foundAnimal && (
+            {foundAnimal && !existingDeclaration && (
               <>
                 <div>
                   <label
@@ -266,6 +417,97 @@ export default function DeclareAnimalLost() {
               </>
             )}
           </form>
+        </div>
+
+        {/* My Declarations Table */}
+        <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md mt-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">
+            Mes déclarations
+          </h2>
+          <div className="mb-4 flex flex-col sm:flex-row gap-4">
+            <input
+              type="text"
+              placeholder="Rechercher (nom, espèce, identifiant, QR)..."
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
+            />
+            <select
+              value={filterStatus}
+              onChange={(e) =>
+                setFilterStatus(e.target.value as "all" | "found" | "not_found")
+              }
+              className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
+            >
+              <option value="all">Tous</option>
+              <option value="found">Trouvé</option>
+              <option value="not_found">Non trouvé</option>
+            </select>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Animal
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Trouvé
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredDeclarations.length > 0 ? (
+                  filteredDeclarations.map((decl) => (
+                    <tr key={decl.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(decl.lost_date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex items-center">
+                          <div className="mr-4">
+                            {getAnimalIcon(decl.animal?.espece)}
+                          </div>
+                          <div>
+                            <div className="font-medium">
+                              {decl.animal?.nme || "Inconnu"}
+                            </div>
+                            <div className="text-gray-500 text-xs">
+                              {decl.animal?.espece}{" "}
+                              {decl.animal?.sexe ? `- ${decl.animal.sexe}` : ""}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {decl.is_found ? (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Oui
+                          </span>
+                        ) : (
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Non
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="px-6 py-4 text-center text-sm text-gray-500"
+                    >
+                      Aucune déclaration trouvée.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
       <PgFooter />

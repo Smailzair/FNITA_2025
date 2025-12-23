@@ -50,14 +50,8 @@ export default function VetsDashboard() {
               <DashboardButton
                 to="/DeclareAnimalLost"
                 icon={<LostAnimalIcon />}
-                title="Signaler un Animal Perdu"
+                title="Signaler un Animal Perdu/Trouvé"
                 description="Aider à retrouver les animaux perdus en signalant un cas."
-              />
-              <DashboardButton
-                to="/vets/animal-trouve"
-                icon={<FoundAnimalIcon />}
-                title="Signaler un Animal Trouvé"
-                description="Enregistrer un animal trouvé pour retrouver son propriétaire."
               />
             </div>
           </div>

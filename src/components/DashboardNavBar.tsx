@@ -128,14 +128,9 @@ const vetLinks = [
     icon: <ReportDiseaseIcon />,
   },
   {
-    to: "/vets/animal-perdu",
-    title: "Signaler un Animal Perdu",
+    to: "/DeclareAnimalLost",
+    title: "Signaler un Animal Perdu/Trouvé",
     icon: <LostAnimalIcon />,
-  },
-  {
-    to: "/vets/animal-trouve",
-    title: "Signaler un Animal Trouvé",
-    icon: <FoundAnimalIcon />,
   },
 ];
 
