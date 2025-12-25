@@ -43,6 +43,17 @@ export default function DeclareAnimalLost() {
   const [existingDeclaration, setExistingDeclaration] = useState<any | null>(
     null
   );
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isVet, setIsVet] = useState(false);
+  // const [vetFilterCabinet, setVetFilterCabinet] = useState(false);
+  // const [vetFilterMine, setVetFilterMine] = useState(true);
+  const [vetFilterType, setVetFilterType] = useState<"mine" | "cabinet">(
+    "mine"
+  );
 
   useEffect(() => {
     if (foundAnimal) {
@@ -57,26 +68,68 @@ export default function DeclareAnimalLost() {
   const fetchDeclarations = async () => {
     const { data: userData } = await supabase.auth.getUser();
     if (userData.user) {
+      setCurrentUserId(userData.user.id);
+      setCurrentUserEmail(userData.user.email ? userData.user.email : "");
+
+      let isUserAdmin = false;
+      let isUserVet = false;
+      const { data: userProfile } = await supabase
+        .from("tb_login")
+        .select("type")
+        .eq("id", userData.user.id)
+        .single();
+
+      if (userProfile?.type === "Administrateur") {
+        isUserAdmin = true;
+      }
+      if (userProfile?.type === "Vétérinaire") {
+        isUserVet = true;
+      }
+      setIsAdmin(isUserAdmin);
+      setIsVet(isUserVet);
+
       // 1. Fetch declarations first (without join)
-      const { data: declarations, error: declError } = await supabase
-        .from("tb_lost_animals")
-        .select("*")
-        .eq("created_by_user_id", userData.user.id)
-        .order("lost_date", { ascending: false });
+      let query = supabase.from("tb_lost_animals").select("*");
+
+      if (!isUserAdmin) {
+        if (isUserVet) {
+          const { data: vetAnimals } = await supabase
+            .from("tb_animals")
+            .select("id")
+            .eq("created_by_email", userData.user.email);
+
+          const vetAnimalIds = vetAnimals?.map((a) => a.id) || [];
+
+          if (vetAnimalIds.length > 0) {
+            query = query.or(
+              `created_by_user_id.eq.${userData.user.id},animal_id.in.(${vetAnimalIds.join(",")})`
+            );
+          } else {
+            query = query.eq("created_by_user_id", userData.user.id);
+          }
+        } else {
+          query = query.eq("created_by_user_id", userData.user.id);
+        }
+      }
+
+      const { data: declarations, error: declError } = await query.order(
+        "lost_date",
+        { ascending: false }
+      );
 
       if (declError || !declarations) return;
 
       // 2. Collect animal IDs
-      const animalIds = declarations
-        .map((d) => d.animal_id)
-        .filter((id) => id); // Filter out nulls
+      const animalIds = declarations.map((d) => d.animal_id).filter((id) => id); // Filter out nulls
 
       // 3. Fetch animal details manually
       let animalsMap: Record<string, any> = {};
       if (animalIds.length > 0) {
         const { data: animals } = await supabase
           .from("tb_animals")
-          .select("id, nme, espece, sexe, num_ident, qr_code_identifier")
+          .select(
+            "id, nme, espece, sexe, num_ident, qr_code_identifier, created_by_email, owner:propr_id ( fam_nme, nme )"
+          )
           .in("id", animalIds);
 
         animals?.forEach((a) => (animalsMap[a.id] = a));
@@ -102,6 +155,8 @@ export default function DeclareAnimalLost() {
     setError(null);
     setFoundAnimal(null);
     setExistingDeclaration(null);
+    setEditingId(null);
+    setIsReadOnly(false);
 
     try {
       const { data, error: dbError } = await supabase
@@ -142,6 +197,8 @@ export default function DeclareAnimalLost() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) return;
+
     if (!foundAnimal?.id) {
       alert("Veuillez d'abord rechercher et trouver un animal.");
       return;
@@ -158,6 +215,32 @@ export default function DeclareAnimalLost() {
     }
 
     const { data: userData } = await supabase.auth.getUser();
+
+    if (editingId) {
+      const { error: updateError } = await supabase
+        .from("tb_lost_animals")
+        .update({
+          lost_date: lostDate,
+          descr: description,
+        })
+        .eq("id", editingId);
+
+      if (updateError) {
+        alert(`Erreur lors de la mise à jour: ${updateError.message}`);
+      } else {
+        alert("La déclaration a été mise à jour avec succès !");
+        setIdentifier("");
+        setFoundAnimal(null);
+        setExistingDeclaration(null);
+        setLostDate(new Date().toISOString().split("T")[0]);
+        setDescription("");
+        setError(null);
+        setEditingId(null);
+        setIsReadOnly(false);
+        void fetchDeclarations();
+      }
+      return;
+    }
 
     const { error: insertError } = await supabase
       .from("tb_lost_animals")
@@ -178,8 +261,44 @@ export default function DeclareAnimalLost() {
       setLostDate(new Date().toISOString().split("T")[0]);
       setDescription("");
       setError(null);
+      setEditingId(null);
+      setIsReadOnly(false);
       void fetchDeclarations();
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (
+      !window.confirm("Êtes-vous sûr de vouloir supprimer cette déclaration ?")
+    ) {
+      return;
+    }
+
+    const { error: deleteError } = await supabase
+      .from("tb_lost_animals")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) {
+      alert(`Erreur lors de la suppression: ${deleteError.message}`);
+    } else {
+      void fetchDeclarations();
+    }
+  };
+
+  const handleRowClick = (decl: any) => {
+    setIdentifier(
+      decl.animal?.num_ident || decl.animal?.qr_code_identifier || ""
+    );
+    setFoundAnimal(decl.animal);
+    setLostDate(decl.lost_date ? decl.lost_date.split("T")[0] : "");
+    setDescription(decl.descr || "");
+    setEditingId(decl.id);
+    setExistingDeclaration(null);
+    setError(null);
+    setIsSearching(false);
+    setIsReadOnly(decl.created_by_user_id !== currentUserId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const filteredDeclarations = myDeclarations.filter((decl) => {
@@ -199,8 +318,16 @@ export default function DeclareAnimalLost() {
       filterStatus === "all"
         ? true
         : filterStatus === "found"
-        ? decl.is_found
-        : !decl.is_found;
+          ? decl.is_found
+          : !decl.is_found;
+
+    if (isVet) {
+      const isMine = decl.created_by_user_id === currentUserId;
+      const isMyCabinet = decl.animal?.created_by_email === currentUserEmail;
+
+      if (vetFilterType === "mine" && !isMine) return false;
+      if (vetFilterType === "cabinet" && !isMyCabinet) return false;
+    }
 
     return matchesText && matchesStatus;
   });
@@ -335,7 +462,7 @@ export default function DeclareAnimalLost() {
             )}
 
             {/* Existing Declaration Warning */}
-            {foundAnimal && existingDeclaration && (
+            {foundAnimal && existingDeclaration && !editingId && (
               <div className="p-4 border rounded-md bg-yellow-50 border-yellow-200 text-yellow-800 mt-4">
                 <div className="flex items-center">
                   <svg
@@ -359,7 +486,9 @@ export default function DeclareAnimalLost() {
                 <p className="mt-2 ml-8">
                   Une déclaration est déjà active pour cet animal depuis le{" "}
                   <span className="font-semibold">
-                    {new Date(existingDeclaration.lost_date).toLocaleDateString()}
+                    {new Date(
+                      existingDeclaration.lost_date
+                    ).toLocaleDateString()}
                   </span>
                   .
                 </p>
@@ -367,7 +496,7 @@ export default function DeclareAnimalLost() {
             )}
 
             {/* Additional Fields */}
-            {foundAnimal && !existingDeclaration && (
+            {foundAnimal && (!existingDeclaration || editingId) && (
               <>
                 <div>
                   <label
@@ -382,6 +511,7 @@ export default function DeclareAnimalLost() {
                     id="lost-date"
                     value={lostDate}
                     onChange={(e) => setLostDate(e.target.value)}
+                    readOnly={isReadOnly}
                     onClick={(e) => e.currentTarget.showPicker()}
                     required
                     className="mt-1 block w-full px-3 py-2 border text-black border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
@@ -400,20 +530,25 @@ export default function DeclareAnimalLost() {
                     rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
+                    readOnly={isReadOnly}
                     className="mt-1 block w-full px-3 py-2 text-black border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     placeholder="Décrivez les circonstances de la perte..."
                   />
                 </div>
 
                 {/* Save Button */}
-                <div className="text-center">
-                  <button
-                    type="submit"
-                    className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                  >
-                    Enregistrer la déclaration
-                  </button>
-                </div>
+                {!isReadOnly && (
+                  <div className="text-center">
+                    <button
+                      type="submit"
+                      className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    >
+                      {editingId
+                        ? "Mettre à jour"
+                        : "Enregistrer la déclaration"}
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </form>
@@ -424,6 +559,34 @@ export default function DeclareAnimalLost() {
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             Mes déclarations
           </h2>
+          {isVet && (
+            <div className="mb-4 p-4 bg-blue-50 rounded-md border border-blue-100 flex flex-col sm:flex-row gap-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="vetFilter"
+                  checked={vetFilterType === "cabinet"}
+                  onChange={() => setVetFilterType("cabinet")}
+                  className="text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                />
+                <span className="text-sm text-gray-700 font-medium">
+                  Déclarations concernant les animaux de mon cabinet
+                </span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="vetFilter"
+                  checked={vetFilterType === "mine"}
+                  onChange={() => setVetFilterType("mine")}
+                  className="text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                />
+                <span className="text-sm text-gray-700 font-medium">
+                  Déclarations créées par moi
+                </span>
+              </label>
+            </div>
+          )}
           <div className="mb-4 flex flex-col sm:flex-row gap-4">
             <input
               type="text"
@@ -455,14 +618,24 @@ export default function DeclareAnimalLost() {
                     Animal
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Propriétaire
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Trouvé
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredDeclarations.length > 0 ? (
                   filteredDeclarations.map((decl) => (
-                    <tr key={decl.id}>
+                    <tr
+                      key={decl.id}
+                      onClick={() => handleRowClick(decl)}
+                      className="cursor-pointer hover:bg-gray-50"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {new Date(decl.lost_date).toLocaleDateString()}
                       </td>
@@ -483,6 +656,11 @@ export default function DeclareAnimalLost() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {decl.animal?.owner
+                          ? `${decl.animal.owner.fam_nme} ${decl.animal.owner.nme}`
+                          : "Non renseigné"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {decl.is_found ? (
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                             Oui
@@ -493,12 +671,26 @@ export default function DeclareAnimalLost() {
                           </span>
                         )}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {(decl.created_by_user_id === currentUserId ||
+                          isAdmin) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleDelete(decl.id);
+                            }}
+                            className="text-red-600 hover:text-red-900 font-medium"
+                          >
+                            Supprimer
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td
-                      colSpan={3}
+                      colSpan={5}
                       className="px-6 py-4 text-center text-sm text-gray-500"
                     >
                       Aucune déclaration trouvée.
