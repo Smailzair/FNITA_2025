@@ -47,11 +47,6 @@ const LostAnimalIcon = () => (
   </svg>
 );
 
-const FoundAnimalIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 13c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
-  </svg>
-);
 
 const VaccineIcon = () => (
   <svg
@@ -129,7 +124,7 @@ const vetLinks = [
   },
   {
     to: "/DeclareAnimalLost",
-    title: "Signaler un Animal Perdu/Trouvé",
+    title: "Signaler un Animal Perdu/Retrouvé",
     icon: <LostAnimalIcon />,
   },
 ];

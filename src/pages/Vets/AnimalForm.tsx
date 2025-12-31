@@ -681,7 +681,7 @@ export default function AnimalForm({
                 </div>
                 <div style="display: flex; justify-content: space-between;">
                     <div style="width: 48%;">
-                        <p style="margin: 1mm 0; color: #000;"><strong>DATE d'Insert:</strong> ${new Date().toLocaleDateString("fr-FR")}</p>
+                        <p style="margin: 1mm 0; color: #000;"><strong>DATE D'INSCREPTION:</strong> ${new Date().toLocaleDateString("fr-FR")}</p>
                         <p style="margin: 1mm 0; color: #000;"><strong>EMPLACEMENT:</strong> --</p>
                         <p style="margin: 1mm 0; color: #000;"><strong>VÉTÉRINAIRE:</strong> ${veter_infos ? `${veter_infos?.fam_nme}${" "}${veter_infos?.nme || `${formData?.created_by_email || "--"}`}` : "--"}</p>
                     </div>

@@ -13,6 +13,15 @@ export default function DetentDashboard() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [PropFullNme, setPropFullNme] = useState("");
+  const [lostDeclaration, setLostDeclaration] = useState<any>(null);
+  const [showLostModal, setShowLostModal] = useState(false);
+  const [showFoundModal, setShowFoundModal] = useState(false);
+  const [declarationDate, setDeclarationDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [declarationDesc, setDeclarationDesc] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const animalId = sessionStorage.getItem("detent_animal_id");
@@ -57,6 +66,36 @@ email
         if (data) {
           setAnimalData(data);
           setPropFullNme(`${data.tb_props?.fam_nme} ${data.tb_props?.nme}`);
+
+          // Check for active lost declaration
+          const { data: lostDataRes } = await supabase
+            .from("tb_lost_animals")
+            .select("*")
+            .eq("animal_id", data.id)
+            .eq("is_found", false)
+            .order("lost_date", { ascending: false })
+            .limit(1);
+          const lostData = lostDataRes?.[0];
+
+          if (lostData) {
+            let declarer = "Inconnu";
+            if (lostData.created_by_user_id) {
+              const { data: uData } = await supabase
+                .from("tb_login")
+                .select("fam_nme, nme, type")
+                .eq("id", lostData.created_by_user_id)
+                .maybeSingle();
+              if (uData) {
+                declarer = `${uData.fam_nme} ${uData.nme} (${uData.type})`;
+              }
+            } else if (lostData.created_by_prop_id) {
+              declarer = "Propriétaire (Vous)";
+            }
+            setLostDeclaration({ ...lostData, declarer });
+          } else {
+            setLostDeclaration(null);
+          }
+
           //----------------
           const { data: vetData } = await supabase
             .from("tb_login")
@@ -88,7 +127,7 @@ adresse`
     };
 
     fetchData();
-  }, [navigate]);
+  }, [navigate, refreshTrigger]);
 
   const handleLogout = () => {
     sessionStorage.removeItem("detent_animal_id");
@@ -172,7 +211,7 @@ adresse`
                 </div>
                 <div style="display: flex; justify-content: space-between;">
                     <div style="width: 48%;">
-                        <p style="margin: 1mm 0; color: #000;"><strong>DATE d'Insert:</strong> ${new Date().toLocaleDateString("fr-FR")}</p>
+                        <p style="margin: 1mm 0; color: #000;"><strong>DATE D'INSCREPTION:</strong> ${new Date().toLocaleDateString("fr-FR")}</p>
                         <p style="margin: 1mm 0; color: #000;"><strong>EMPLACEMENT:</strong> --</p>
                         <p style="margin: 1mm 0; color: #000;"><strong>VÉTÉRINAIRE:</strong> ${VeterinaryData ? `${VeterinaryData?.fam_nme}${" "}${VeterinaryData?.nme || `${animalData?.created_by_email || "--"}`}` : "--"}</p>
                     </div>
@@ -278,6 +317,61 @@ adresse`
     document.body.removeChild(tempDiv);
   };
 
+  const handleLostSubmit = async () => {
+    if (!animalData) return;
+    setIsSubmitting(true);
+    try {
+      // Check if an active declaration already exists to prevent duplicates
+      const { data: existing } = await supabase
+        .from("tb_lost_animals")
+        .select("id")
+        .eq("animal_id", animalData.id)
+        .eq("is_found", false)
+        .maybeSingle();
+
+      if (existing) {
+        throw new Error("Une déclaration de perte est déjà active pour cet animal.");
+      }
+
+      const { error } = await supabase.from("tb_lost_animals").insert({
+        animal_id: animalData.id,
+        lost_date: declarationDate,
+        descr: declarationDesc,
+        created_by_prop_id: animalData.propr_id,
+        is_found: false,
+      });
+      if (error) throw error;
+      setShowLostModal(false);
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (err: any) {
+      alert("Erreur: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFoundSubmit = async () => {
+    if (!lostDeclaration) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("tb_lost_animals")
+        .update({
+          is_found: true,
+          found_date: declarationDate,
+          found_declar_by_prop_id: animalData.propr_id,
+        })
+        .eq("id", lostDeclaration.id);
+      if (error) throw error;
+      setShowFoundModal(false);
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (err: any) {
+      alert("Erreur: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col w-screen h-screen bg-gray-50">
       <nav className="bg-teal-900 z-0">
@@ -344,11 +438,12 @@ adresse`
           }}
         >
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-gray-500 mb-8">
-              Bienvenue dans votre espace détenteur, {PropFullNme}!
-            </h1>
+
             <h1 className="text-3xl font-bold text-gray-800 mb-2">
               Gestion de mon Animal
+            </h1>
+            <h1 className="text-gray-500 mb-8">
+              Bienvenue dans votre espace détenteur, {PropFullNme}!
             </h1>
             <p className="text-gray-600 mb-8">
               Effectuez des déclarations ou gérez les documents officiels de
@@ -365,39 +460,28 @@ adresse`
               <div className="text-center py-8 text-red-600">{errorMsg}</div>
             )}
 
-            <div className="flex flex-wrap gap-8 justify-center md:justify-start mb-12">
-              <DashboardButton
-                to="/detent/declare-lost"
-                icon={<LostAnimalIcon />}
-                title="Déclarer Perdu"
-                description="Signaler la perte de votre animal pour diffuser une alerte."
-              />
-              <DashboardButton
-                to="/detent/declare-found"
-                icon={<FoundAnimalIcon />}
-                title="Déclarer Retrouvé"
-                description="Indiquer que votre animal a été retrouvé."
-              />
-              <DashboardButton
-                to="/detent/declare-dead"
-                icon={<DeadAnimalIcon />}
-                title="Déclarer Décès"
-                description="Signaler le décès de l'animal aux services concernés."
-              />
-              <div
-                onClick={(e: any) => {
-                  e.preventDefault();
-                  handleGenerateCertificate();
-                }}
-              >
-                <DashboardButton
-                  to="#"
-                  icon={<PrintIcon />}
-                  title="Imprimer Certificat"
-                  description="Télécharger ou imprimer la carte d'identification."
-                />
+            {/* Lost Declaration Warning */}
+            {!loading && lostDeclaration && (
+              <div className="bg-orange-50 border-l-4 border-orange-500 p-4 mb-8 rounded shadow-sm">
+                <div className="flex">
+                  <div className="shrink-0">
+                    <svg className="h-5 w-5 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-lg font-medium text-orange-800">
+                      Animal déclaré perdu
+                    </h3>
+                    <div className="mt-2 text-sm text-orange-700">
+                      <p><span className="font-bold">Date de la perte :</span> {new Date(lostDeclaration.lost_date).toLocaleDateString("fr-FR")}</p>
+                      <p><span className="font-bold">Déclaré par :</span> {lostDeclaration.declarer}</p>
+                      {lostDeclaration.descr && <p><span className="font-bold">Description :</span> {lostDeclaration.descr}</p>}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Animal Situation Status */}
             {!loading && animalData && animalData.is_radiated && (
@@ -432,8 +516,8 @@ adresse`
                         <span className="font-bold">Date :</span>{" "}
                         {animalData.radiat_date
                           ? new Date(animalData.radiat_date).toLocaleDateString(
-                              "fr-FR"
-                            )
+                            "fr-FR"
+                          )
                           : "-"}
                       </p>
                     </div>
@@ -441,6 +525,63 @@ adresse`
                 </div>
               </div>
             )}
+
+            <div className="flex flex-wrap gap-8 justify-center md:justify-start mb-12">
+              <div className={lostDeclaration || (animalData && animalData.is_radiated) ? "opacity-50 pointer-events-none grayscale" : ""}>
+                <div
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setDeclarationDate(new Date().toISOString().split("T")[0]);
+                    setDeclarationDesc("");
+                    setShowLostModal(true);
+                  }}
+                >
+                  <DashboardButton
+                    to="#"
+                    icon={<LostAnimalIcon />}
+                    title="Déclarer Perdu"
+                    description="Signaler la perte de votre animal pour diffuser une alerte."
+                  />
+                </div>
+              </div>
+              <div className={!lostDeclaration || (animalData && animalData.is_radiated) ? "opacity-50 pointer-events-none grayscale" : ""}>
+                <div
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setDeclarationDate(new Date().toISOString().split("T")[0]);
+                    setShowFoundModal(true);
+                  }}
+                >
+                  <DashboardButton
+                    to="#"
+                    icon={<FoundAnimalIcon />}
+                    title="Déclarer Retrouvé"
+                    description="Indiquer que votre animal a été retrouvé."
+                  />
+                </div>
+              </div>
+              <div className={animalData && animalData.is_radiated ? "opacity-50 pointer-events-none grayscale" : ""}>
+                <DashboardButton
+                  to="/detent/declare-dead"
+                  icon={<DeadAnimalIcon />}
+                  title="Déclarer Décès"
+                  description="Signaler le décès de l'animal aux services concernés."
+                />
+              </div>
+              <div
+                onClick={(e: any) => {
+                  e.preventDefault();
+                  handleGenerateCertificate();
+                }}
+              >
+                <DashboardButton
+                  to="#"
+                  icon={<PrintIcon />}
+                  title="Imprimer Certificat"
+                  description="Télécharger ou imprimer la carte d'identification."
+                />
+              </div>
+            </div>
 
             {/* Animal Details Area */}
             {!loading && animalData && (
@@ -554,6 +695,115 @@ adresse`
             )}
           </div>
         </div>
+
+        {/* Lost Modal */}
+        {showLostModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                Déclarer l'animal perdu
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date de la perte
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={declarationDate}
+                      onChange={(e) => setDeclarationDate(e.target.value)}
+                      onClick={(e) => e.currentTarget.showPicker()}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500 text-black"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description / Circonstances
+                  </label>
+                  <textarea
+                    value={declarationDesc}
+                    onChange={(e) => setDeclarationDesc(e.target.value)}
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500 text-black"
+                    placeholder="Où et comment l'animal a-t-il été perdu ?"
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowLostModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  disabled={isSubmitting}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleLostSubmit}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Enregistrement..." : "Valider la perte"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Found Modal */}
+        {showFoundModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                Déclarer l'animal retrouvé
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date de retrouvaille
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={declarationDate}
+                      min={lostDeclaration?.lost_date ? lostDeclaration.lost_date.split("T")[0] : undefined}
+                      onChange={(e) => setDeclarationDate(e.target.value)}
+                      onClick={(e) => e.currentTarget.showPicker()}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500 text-black"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowFoundModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  disabled={isSubmitting}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleFoundSubmit}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Enregistrement..." : "Valider"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       <PgFooter />
     </div>

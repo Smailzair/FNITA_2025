@@ -565,7 +565,7 @@ export default function StatisticsPage() {
         {/* --- Print Footer --- */}
         <div className="print:block hidden text-center text-xs text-gray-500 mt-8 pt-4 border-t">
           Rapport généré par le Fichier National d'Identification et Traçabilité
-          Animale - Al Baitar SoftVet
+          Animale - RancoSoft™
         </div>
       </main>
       <div className="print:hidden">

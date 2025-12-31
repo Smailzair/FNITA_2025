@@ -3,6 +3,7 @@ import { sendPasswordResetEmail, supabase } from "../api/supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
 import { PgHeader } from "../components/PgHeader";
 import PgFooter from "../components/PgFooter";
+import { UserRole } from "../main";
 
 type LoginError =
   | "wrong-password"
@@ -87,7 +88,7 @@ export default function Login() {
     const { data: existingUser, error: fetchError } = await supabase
       .from("tb_login")
       .select("id")
-      .eq("email", formData.email)
+      .eq("email", formData.email.trim())
       .single();
 
     // If no user is found with that email, set an error and stop.
@@ -101,7 +102,7 @@ export default function Login() {
     // If the email exists, proceed with the sign-in attempt.
     const { data: signInData, error: signInError } =
       await supabase.auth.signInWithPassword({
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password,
       });
 
@@ -154,12 +155,14 @@ export default function Login() {
   };
 
   const redirectToDashboard = (role: string) => {
+    const cleanRole = role ? role.trim() : "";
     const roleDashboardMap: Record<string, string> = {
-      Administrateur: "/admindashboard",
-      "Ayant droit": "/aydroitdashboard",
-      Vétérinaire: "/vetsdashboard",
+      [UserRole.Adminis]: "/admindashboard",
+      [UserRole.AyDroit]: "/aydroitdashboard",
+      [UserRole.Vet]: "/vetsdashboard",
+      Veterinaire: "/vetsdashboard",
     };
-    navigate(roleDashboardMap[role] || "/dashboard");
+    navigate(roleDashboardMap[cleanRole] || "/dashboard");
   };
 
   return (
