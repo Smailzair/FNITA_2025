@@ -230,7 +230,6 @@ export default function AnimalForm({
   const [filteredRaceOptions, setFilteredRaceOptions] = useState(raceOptions);
   const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
   const { role } = useAuth();
-  const { user } = useAuth();
   const [filteredOwners, setFilteredOwners] = useState<Owner[]>([]);
   const [showOwnerSuggestions, setShowOwnerSuggestions] = useState(false);
   const ownerInputRef = useRef<HTMLDivElement | null>(null);
@@ -871,9 +870,8 @@ export default function AnimalForm({
           <div>
             <label
               htmlFor="num_ident"
-              className={`block text-sm font-medium ${
-                numIdentError ? "text-red-600" : "text-gray-700"
-              }`}
+              className={`block text-sm font-medium ${numIdentError ? "text-red-600" : "text-gray-700"
+                }`}
             >
               N° Identification
             </label>
@@ -885,9 +883,8 @@ export default function AnimalForm({
                 onChange={handleChange}
                 onBlur={handleNumIdentBlur}
                 placeholder="15 caractères alphanumériques"
-                className={`p-1 border rounded w-full ${
-                  numIdentError ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`p-1 border rounded w-full ${numIdentError ? "border-red-500" : "border-gray-300"
+                  }`}
                 maxLength={15}
               />
               <button
@@ -1107,9 +1104,8 @@ export default function AnimalForm({
                 type="button"
                 onClick={toggleSexe}
                 className="flex items-center justify-center h-9 w-9 bg-gray-200 rounded-full hover:bg-gray-300"
-                title={`Changer pour ${
-                  formData.sexe === "Mâle" ? "Femelle" : "Mâle"
-                }`}
+                title={`Changer pour ${formData.sexe === "Mâle" ? "Femelle" : "Mâle"
+                  }`}
               >
                 {formData.sexe === "Mâle" ? (
                   <svg
