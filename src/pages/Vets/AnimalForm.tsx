@@ -235,6 +235,9 @@ export default function AnimalForm({
   const ownerInputRef = useRef<HTMLDivElement | null>(null);
   const [numIdentError, setNumIdentError] = useState<string | null>(null);
   const [isCheckingNumIdent, setIsCheckingNumIdent] = useState(false);
+  const [vetInfo, setVetInfo] = useState<any>(null);
+  const [showVetInfo, setShowVetInfo] = useState(false);
+  const [isLoadingVetInfo, setIsLoadingVetInfo] = useState(false);
 
   const isEditing = animal && animal.id;
 
@@ -466,6 +469,42 @@ export default function AnimalForm({
     setTimeout(() => {
       setShowOwnerSuggestions(false);
     }, 150); // 150ms delay
+  };
+
+  const handleShowVetInfo = async () => {
+    if (showVetInfo) {
+      setShowVetInfo(false);
+      return;
+    }
+
+    if (vetInfo) {
+      setShowVetInfo(true);
+      return;
+    }
+
+    const email =
+      (formData as any).created_by_email || (animal as any)?.created_by_email;
+
+    if (!email) {
+      alert("Information non disponible.");
+      return;
+    }
+
+    setIsLoadingVetInfo(true);
+    try {
+      const info = await getUserByEmail(email);
+      if (info) {
+        setVetInfo(info);
+        setShowVetInfo(true);
+      } else {
+        alert("Vétérinaire introuvable.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la récupération des informations.");
+    } finally {
+      setIsLoadingVetInfo(false);
+    }
   };
 
   const checkNumIdentUniqueness = async (ident: string) => {
@@ -1195,6 +1234,48 @@ export default function AnimalForm({
         />
 
         {isEditing && (
+          <div className="mt-1">
+            <button
+              type="button"
+              onClick={() => void handleShowVetInfo()}
+              className="text-sm text-cyan-600 hover:text-cyan-800 underline focus:outline-none flex items-center gap-2"
+            >
+              {showVetInfo
+                ? "Masquer les infos du vétérinaire"
+                : "Voir les infos du vétérinaire"}
+              {isLoadingVetInfo && (
+                <span className="text-xs text-gray-500">Chargement...</span>
+              )}
+            </button>
+
+            {showVetInfo && vetInfo && (
+              <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800 shadow-sm">
+                <p>
+                  <span className="font-semibold">Vétérinaire:</span>{" "}
+                  {vetInfo.nme} {vetInfo.fam_nme}
+                </p>
+                <p>
+                  <span className="font-semibold">Email:</span> {vetInfo.email}
+                </p>
+                {vetInfo.phone && (
+                  <p>
+                    <span className="font-semibold">Tél:</span> {vetInfo.phone}
+                  </p>
+                )}
+                {(vetInfo.adresse || vetInfo.city || vetInfo.wilaya) && (
+                  <p>
+                    <span className="font-semibold">Adresse:</span>{" "}
+                    {[vetInfo.adresse, vetInfo.city, vetInfo.wilaya]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {isEditing && (
           <div className="border-t border-gray-300 pt-4 mt-4">
             <h3 className="text-lg font-medium text-gray-800 mb-2">
               QR Code Ministériel
@@ -1270,87 +1351,91 @@ export default function AnimalForm({
           </div>
         )}
 
-        <div className="border-t border-gray-300 pt-2">
-          <label className="flex items-center space-x-3 cursor-pointer">
-            <input
-              type="checkbox"
-              name="is_radiated"
-              checked={!!formData.is_radiated}
-              onChange={handleChange}
-              className="h-5 w-5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
-            />
-            <span className="text-gray-700 font-medium">Radié</span>
-          </label>
-        </div>
-
-        {formData.is_radiated && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 p-4 border border-gray-200 rounded-md bg-gray-50">
-            <div>
-              <label
-                htmlFor="radiat_date"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Date de radiation
-              </label>
-              <div className="relative">
+        {isEditing && (
+          <>
+            <div className="border-t border-gray-300 pt-2">
+              <label className="flex items-center space-x-3 cursor-pointer">
                 <input
-                  id="radiat_date"
-                  name="radiat_date"
-                  type="date"
-                  value={formData.radiat_date || ""}
+                  type="checkbox"
+                  name="is_radiated"
+                  checked={!!formData.is_radiated}
                   onChange={handleChange}
-                  className="p-1 border rounded w-full text-gray-900 appearance-none"
+                  className="h-5 w-5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
                 />
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                  <svg
-                    className="fill-current h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
+                <span className="text-gray-700 font-medium">Radié</span>
+              </label>
+            </div>
+
+            {formData.is_radiated && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 p-4 border border-gray-200 rounded-md bg-gray-50">
+                <div>
+                  <label
+                    htmlFor="radiat_date"
+                    className="block text-sm font-medium text-gray-700"
                   >
-                    <path d="M9 11H5V13H9V11ZM15 11H11V13H15V11ZM19 4H18V2H16V4H8V2H6V4H5C3.89 4 3.01 4.9 3.01 6L3 20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V9H19V20Z" />
-                  </svg>
+                    Date de radiation
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="radiat_date"
+                      name="radiat_date"
+                      type="date"
+                      value={formData.radiat_date || ""}
+                      onChange={handleChange}
+                      className="p-1 border rounded w-full text-gray-900 appearance-none"
+                    />
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                      <svg
+                        className="fill-current h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9 11H5V13H9V11ZM15 11H11V13H15V11ZM19 4H18V2H16V4H8V2H6V4H5C3.89 4 3.01 4.9 3.01 6L3 20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V9H19V20Z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label
+                    htmlFor="radiat_reason"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Motif de radiation
+                  </label>
+                  <select
+                    id="radiat_reason_select"
+                    name="radiat_reason"
+                    value={
+                      radiationReasons.includes(formData.radiat_reason || "")
+                        ? formData.radiat_reason || ""
+                        : "Autre"
+                    }
+                    onChange={handleChange}
+                    className="p-1 border rounded w-full text-gray-900"
+                  >
+                    <option value="">Sélectionner un motif</option>
+                    {radiationReasons.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                    <option value="Autre">Autre...</option>
+                  </select>
+                  {!radiationReasons.includes(formData.radiat_reason || "") &&
+                    formData.is_radiated && (
+                      <input
+                        type="text"
+                        name="radiat_reason"
+                        value={formData.radiat_reason || ""}
+                        onChange={handleCustomChange}
+                        placeholder="Préciser le motif"
+                        className="mt-1 p-1 border rounded w-full text-gray-900"
+                      />
+                    )}
                 </div>
               </div>
-            </div>
-            <div>
-              <label
-                htmlFor="radiat_reason"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Motif de radiation
-              </label>
-              <select
-                id="radiat_reason_select"
-                name="radiat_reason"
-                value={
-                  radiationReasons.includes(formData.radiat_reason || "")
-                    ? formData.radiat_reason || ""
-                    : "Autre"
-                }
-                onChange={handleChange}
-                className="p-1 border rounded w-full text-gray-900"
-              >
-                <option value="">Sélectionner un motif</option>
-                {radiationReasons.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-                <option value="Autre">Autre...</option>
-              </select>
-              {!radiationReasons.includes(formData.radiat_reason || "") &&
-                formData.is_radiated && (
-                  <input
-                    type="text"
-                    name="radiat_reason"
-                    value={formData.radiat_reason || ""}
-                    onChange={handleCustomChange}
-                    placeholder="Préciser le motif"
-                    className="mt-1 p-1 border rounded w-full text-gray-900"
-                  />
-                )}
-            </div>
-          </div>
+            )}
+          </>
         )}
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
