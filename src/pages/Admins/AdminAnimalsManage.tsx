@@ -57,7 +57,7 @@ export default function AdminAnimalsManage() {
       // Admin fetches ALL animals, no email filter
       const { data, error: fetchError } = await supabase
         .from("tb_animals")
-        .select(`*, owner:propr_id ( nme )`);
+        .select(`*, owner:propr_id ( fam_nme,nme )`);
 
       if (fetchError) {
         throw fetchError;
@@ -65,7 +65,7 @@ export default function AdminAnimalsManage() {
 
       const processedData = (data || []).map((animal) => ({
         ...animal,
-        owner_name: animal.owner ? animal.owner.nme : "N/A",
+        owner_name: animal.owner ? animal.owner.fam_nme + " " + animal.owner.nme : "N/A",
         created_at: new Date(animal.created_at),
         niss_date: animal.niss_date ? new Date(animal.niss_date) : null,
       }));
@@ -396,11 +396,10 @@ export default function AdminAnimalsManage() {
         sortable: true,
         render: (animal) => (
           <span
-            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-              animal.is_radiated
-                ? "bg-red-100 text-red-800"
-                : "bg-green-100 text-green-800"
-            }`}
+            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${animal.is_radiated
+              ? "bg-red-100 text-red-800"
+              : "bg-green-100 text-green-800"
+              }`}
           >
             {animal.is_radiated ? "Oui" : "Non"}
           </span>
@@ -445,11 +444,10 @@ export default function AdminAnimalsManage() {
               <button
                 onClick={handleRadiateClick}
                 disabled={selectedAnimalIds.length === 0}
-                className={`flex items-center justify-center font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap ${
-                  areAllSelectedRadiated && selectedAnimalIds.length > 0
-                    ? "bg-green-500 hover:bg-green-600 text-white"
-                    : "bg-yellow-500 hover:bg-yellow-600 text-white"
-                }`}
+                className={`flex items-center justify-center font-bold py-2 px-4 rounded-full disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap ${areAllSelectedRadiated && selectedAnimalIds.length > 0
+                  ? "bg-green-500 hover:bg-green-600 text-white"
+                  : "bg-yellow-500 hover:bg-yellow-600 text-white"
+                  }`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -508,11 +506,10 @@ export default function AdminAnimalsManage() {
             </div>
             <button
               onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
-              className={`flex items-center justify-center font-semibold py-2 px-5 rounded-full transition-colors duration-200 ${
-                isMultiSelectMode
-                  ? "bg-cyan-600 text-white"
-                  : "bg-gray-300 hover:bg-gray-400 text-gray-800"
-              }`}
+              className={`flex items-center justify-center font-semibold py-2 px-5 rounded-full transition-colors duration-200 ${isMultiSelectMode
+                ? "bg-cyan-600 text-white"
+                : "bg-gray-300 hover:bg-gray-400 text-gray-800"
+                }`}
             >
               Sélection Multiple
             </button>

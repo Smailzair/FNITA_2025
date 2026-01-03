@@ -33,6 +33,7 @@ import IdleTimer from "./components/IdleTimer";
 import ProtectedDetentRoute from "./ProtectedDetentRoute";
 import DetentLogin from "./pages/detent/DetentLogin";
 import DetentDashboard from "./pages/detent/DetentDashboard";
+import AdminVaccinesStock from "./pages/Admins/AdminVaccinesStock";
 
 // Define UserRole enum to avoid magic strings
 export const UserRole = {
@@ -120,6 +121,14 @@ if (container) {
               element={
                 <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
                   <StatisticsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/vaccines"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.Adminis]}>
+                  <AdminVaccinesStock />
                 </ProtectedRoute>
               }
             />

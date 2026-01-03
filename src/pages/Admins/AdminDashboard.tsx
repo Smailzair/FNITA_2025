@@ -37,7 +37,7 @@ export default function AdminDashboard() {
               description="Suivre et gérer les déclarations de maladies."
             />
             <DashboardButton
-              to="/underdevelopment"
+              to="/admin/vaccines"
               icon={<VaccineIcon />}
               title="Stock de vaccins"
               description="Gérer la distribution du stock de vaccins par wilaya."
