@@ -11,6 +11,10 @@
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
 
+  /* placeholder color: default for dark backgrounds (slightly darker gray)
+     will be overridden for light schemes and explicit white-bg containers */
+  --placeholder-color: #9CA3AF;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -73,7 +77,32 @@ textarea {
 input::placeholder,
 textarea::placeholder {
   font-size: 10px;
-  color: #b3b3b3;
+  color: var(--placeholder-color);
+}
+
+/* Light color-scheme: on white/light backgrounds make placeholder fainter */
+@media (prefers-color-scheme: light) {
+  :root {
+    --placeholder-color: #282828;
+    /* tailwind gray-300: less visible on white */
+  }
+}
+
+/* Explicit white background containers (Tailwind's bg-white etc.) */
+.bg-white input::placeholder,
+.bg-white textarea::placeholder {
+  color: #D1D5DB;
+}
+
+/* Inputs that are styled for light backgrounds often use `text-black` or bg-gray-*.
+   Match common utility class patterns to make their placeholders fainter. */
+input.text-black::placeholder,
+textarea.text-black::placeholder,
+input[class*="text-black"]::placeholder,
+textarea[class*="text-black"]::placeholder,
+input[class*="bg-white"]::placeholder,
+textarea[class*="bg-white"]::placeholder {
+  color: #9c9c9c;
 }
 
 input:focus,

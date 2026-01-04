@@ -221,6 +221,7 @@ export default function OwnerForm({ owner, onSave, onClose }: OwnerFormProps) {
             <WilayaComboBox
               value={formData.wilaya || ""}
               onChange={(val) => setFormData((p) => ({ ...p, wilaya: val }))}
+              style="text-gray-200"
             />
           </div>
           <div>

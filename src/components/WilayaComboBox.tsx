@@ -4,11 +4,13 @@ import { WILAYAS } from "../constants/wilayas";
 interface WilayaComboBoxProps {
   value: string;
   onChange: (value: string) => void;
+  style?: string;
 }
 
-const WilayaComboBox: React.FC<WilayaComboBoxProps> = ({ value, onChange }) => {
+const WilayaComboBox: React.FC<WilayaComboBoxProps> = ({ value, onChange, style }) => {
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const styleToAdd = style ? style : "text-gray-800";
 
   // Filter the list
   const filtered = WILAYAS.filter((w) =>
@@ -30,7 +32,7 @@ const WilayaComboBox: React.FC<WilayaComboBoxProps> = ({ value, onChange }) => {
         <input
           ref={inputRef}
           type="text"
-          className="text-gray-800 w-full pl-1 border rounded-l-lg placeholder-gray-500"
+          className={`${styleToAdd} w-full pl-1 border rounded-l-lg placeholder-gray-500`}
           placeholder="Wilaya"
           value={value}
           onChange={(e) => {
