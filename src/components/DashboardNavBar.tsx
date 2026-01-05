@@ -97,7 +97,7 @@ const adminLinks = [
     icon: <ReportDiseaseIcon />,
   },
   {
-    to: "/underdevelopment",
+    to: "/admin/vaccines",
     title: "Stock de vaccins",
     icon: <VaccineIcon />,
   },
@@ -163,10 +163,9 @@ export default function DashboardNavBar({ role }: DashboardNavBarProps) {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-          isActive
-            ? "bg-cyan-700 text-white"
-            : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+        `flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
+          ? "bg-cyan-700 text-white"
+          : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
         }`
       }
       onClick={() => setIsMenuOpen(false)}

@@ -4,118 +4,238 @@ import PgFooter from "../../components/PgFooter";
 import WilayaComboBox from "../../components/WilayaComboBox";
 import { supabase } from "../../api/supabaseClient";
 
+// Helper type for input elements that may implement showPicker() in some browsers
+type InputWithPicker = HTMLInputElement & { showPicker?: () => void };
+
+// Common types moved here (previously in src/types/vaccines.ts)
+export type MovementType =
+    | "receive"
+    | "distribute"
+    | "adjust"
+    | "transfer"
+    | "waste";
+
+
+// Types for inventory and movement rows returned from PostgREST
+type InventoryRow = {
+    id?: string;
+    wilaya?: string;
+    quantity?: number;
+    last_updated?: string;
+    created_at?: string;
+    vaccine_name?: string;
+};
+
+type MovementRow = {
+    id?: string;
+    movement_type?: string;
+    date?: string;
+    created_at?: string;
+    wilaya?: string;
+    to_wilaya?: string;
+    vaccine_name?: string;
+    batch_no?: string;
+    quantity?: number;
+};
+
 export default function AdminVaccinesStock() {
     const [loading, setLoading] = useState(false);
-    const [inventory, setInventory] = useState<any[]>([]);
+    const [inventory, setInventory] = useState<InventoryRow[]>([]);
+    const [availableVaccines, setAvailableVaccines] = useState<string[]>([]);
+    const [availableWilayas, setAvailableWilayas] = useState<string[]>([]);
+
+    const [wilayaFilter, setWilayaFilter] = useState("");
+    const [vaccineFilter, setVaccineFilter] = useState("");
+    // dateFilter should be in YYYY-MM-DD format for <input type="date" />
+    const [dateFilter, setDateFilter] = useState<string>(() => {
+        const dt = new Date();
+        dt.setDate(dt.getDate() + 1); // default to tomorrow
+        return dt.toISOString().slice(0, 10);
+    }); // default tomorrow YYYY-MM-DD
+    const dateFilterRef = useRef<HTMLInputElement | null>(null);
 
     // receive form
     const [rVaccineName, setRVaccineName] = useState("");
     const [rBatchNo, setRBatchNo] = useState("");
-    const [rExpiry, setRExpiry] = useState<string>(() => new Date().toISOString().slice(0, 10)); // default to today YYYY-MM-DD
-    const rExpiryRef = useRef<HTMLInputElement | null>(null);
     const [rQty, setRQty] = useState<number | "">("");
     const [rWilaya, setRWilaya] = useState("");
+    const [rDate, setRDate] = useState<string>(() =>
+        new Date().toISOString().slice(0, 10)
+    );
+    const rDateRef = useRef<HTMLInputElement | null>(null);
 
     // distribute form
     const [dVaccineName, setDVaccineName] = useState("");
     const [dFrom, setDFrom] = useState("");
     const [dTo, setDTo] = useState("");
     const [dQty, setDQty] = useState<number | "">("");
-    const [dDate, setDDate] = useState<string>(() => new Date().toISOString().slice(0, 10)); // default today YYYY-MM-DD
+    const [dDate, setDDate] = useState<string>(() =>
+        new Date().toISOString().slice(0, 10)
+    );
     const dDateRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
+        // Fetch current inventory derived from movements and the movements list
         fetchInventory();
         fetchMovements();
+        fetchFilters();
     }, []);
+
+    // Debug: log dDate changes and DOM input value
+    useEffect(() => {
+        console.debug('[AdminVaccinesStock] dDate changed ->', dDate, 'inputValue ->', dDateRef.current?.value);
+    }, [dDate]);
+
+    async function fetchFilters() {
+        // Fetch distinct wilaya names from movements (both wilaya and to_wilaya)
+        const wRes = await supabase.from("tb_vaccin_movements").select("wilaya,to_wilaya");
+        if (wRes.data) {
+            const arrAny = wRes.data || [];
+            const names: string[] = [];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            arrAny.forEach((r: any) => {
+                if (r.wilaya) names.push(r.wilaya);
+                if (r.to_wilaya) names.push(r.to_wilaya);
+            });
+            setAvailableWilayas([...new Set(names)]);
+        }
+
+        // Fetch available vaccine names from movements
+        const vRes = await supabase.from("tb_vaccin_movements").select("vaccine_name");
+        if (vRes.data) {
+            const arrAny = vRes.data || [];
+            const names: string[] = [];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            arrAny.forEach((r: any) => { if (r.vaccine_name) names.push(r.vaccine_name); });
+            setAvailableVaccines([...new Set(names)]);
+        }
+    }
 
     async function fetchInventory() {
         setLoading(true);
+        // derive inventory by aggregating tb_vaccin_movements
         const { data, error } = await supabase
-            .from("inventory")
-            .select("*, vaccines(name)")
-            .order("quantity", { ascending: false });
+            .from("tb_vaccin_movements")
+            .select("*");
 
+        let result: InventoryRow[] = [];
         if (!error) {
-            // supabase returns joined column as vaccines.name; normalize it
-            const normalized = (data ?? []).map((row: any) => ({
-                ...row,
-                vaccine_name: row.vaccines?.name ?? "",
-            }));
-            setInventory(normalized);
+            const rows = (data ?? []) as MovementRow[];
+            // key = `${wilaya}||${vaccineName}`
+            const map = new Map<string, InventoryRow & { last_updated: string }>();
+
+            rows.forEach((mv) => {
+                const vname = mv.vaccine_name ?? "";
+                const date = mv.date ?? mv.created_at ?? new Date().toISOString();
+                const addTo = (wilaya: string | undefined, qty: number) => {
+                    if (!wilaya) return;
+                    const key = `${wilaya}||${vname}`;
+                    const cur = map.get(key) ?? ({ vaccine_name: vname, wilaya, quantity: 0, last_updated: date });
+                    cur.quantity = (cur.quantity ?? 0) + qty;
+                    // keep the most recent date
+                    cur.last_updated = new Date(cur.last_updated) > new Date(date) ? cur.last_updated : date;
+                    map.set(key, cur);
+                };
+
+                const qty = Number(mv.quantity || 0);
+                switch (mv.movement_type) {
+                    case "receive":
+                        addTo(mv.wilaya, qty);
+                        break;
+                    case "distribute":
+                    case "transfer":
+                        addTo(mv.wilaya, -qty);
+                        if (mv.to_wilaya) addTo(mv.to_wilaya, qty);
+                        break;
+                    case "waste":
+                        addTo(mv.wilaya, -qty);
+                        break;
+                    case "adjust":
+                        addTo(mv.wilaya, qty);
+                        break;
+                    default:
+                        break;
+                }
+            });
+
+            result = Array.from(map.values()).map((r) => ({ ...r }));
+            setInventory(result);
         } else {
-            console.error(error);
+            console.error("Error deriving inventory:", error);
         }
         setLoading(false);
+        return result;
     }
 
     // Stock movements (journal)
-    const [movements, setMovements] = useState<any[]>([]);
+    const [movements, setMovements] = useState<MovementRow[]>([]);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    // Movement filters
+    const [mvWilayaFilter, setMvWilayaFilter] = useState("");
+    const [mvVaccineFilter, setMvVaccineFilter] = useState("");
+    const [mvDateFrom, setMvDateFrom] = useState<string>("");
+    const [mvDateTo, setMvDateTo] = useState<string>("");
+    const [mvDateEnabled, setMvDateEnabled] = useState<boolean>(false);
+
+    // When the period filter is enabled, prefill sensible default dates (last 30 days)
+    React.useEffect(() => {
+        if (!mvDateEnabled) return;
+        const today = new Date();
+        const isoToday = today.toISOString().slice(0, 10);
+        if (!mvDateTo) setMvDateTo(isoToday);
+        if (!mvDateFrom) {
+            const start = new Date();
+            start.setDate(start.getDate() - 30);
+            setMvDateFrom(start.toISOString().slice(0, 10));
+        }
+    }, [mvDateEnabled, mvDateFrom, mvDateTo]);
 
     async function fetchMovements() {
         const { data, error } = await supabase
-            .from('stock_movements')
-            .select('*, vaccines(name)')
+            .from('tb_vaccin_movements')
+            .select('*')
             .order('date', { ascending: false })
-            .limit(200);
+            .limit(500);
         if (!error) {
-            setMovements(data ?? []);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const normalized = (data ?? []).map((row: any) => ({
+                ...row,
+                vaccine_name: row.vaccine_name ?? "",
+            }));
+            setMovements(normalized);
         } else {
             console.error('Error loading movements:', error);
         }
     }
 
-    async function adjustInventory(wilaya: string | null | undefined, vaccineId: string | null | undefined, delta: number) {
-        if (!wilaya || !vaccineId) return;
-        const { data: inv } = await supabase.from('inventory').select('*').match({ vaccine_id: vaccineId, wilaya }).maybeSingle();
-        if (inv && inv.id) {
-            const newQty = Math.max(0, Number(inv.quantity) + delta);
-            await supabase.from('inventory').update({ quantity: newQty, last_updated: new Date().toISOString() }).eq('id', inv.id);
-        } else if (delta > 0) {
-            await supabase.from('inventory').insert([{ vaccine_id: vaccineId, wilaya, quantity: delta }]);
-        }
-    }
 
-    async function handleDeleteMovement(id: string) {
-        const mv = movements.find((m: any) => m.id === id);
+
+    async function handleDeleteMovement(id?: string) {
+        if (!id) return;
+        const mv = movements.find((m) => m.id === id);
         if (!mv) return;
 
-        const confirmMsg = `Confirmez-vous la suppression du mouvement (${mv.movement_type}) du ${new Date(mv.date).toLocaleString('fr-FR')} ?`;
+        const confirmMsg = `Confirmez-vous la suppression du mouvement (${mv.movement_type}) du ${new Date(mv.date ?? '').toLocaleString('fr-FR')} ?`;
         if (!window.confirm(confirmMsg)) return;
 
         setDeletingId(id);
         try {
-            const qty = Number(mv.quantity || 0);
-            const vaccineId = mv.vaccine_id;
 
-            if (mv.movement_type === 'receive') {
-                // reverse receive: subtract inventory and reduce batch remaining
-                await adjustInventory(mv.wilaya, vaccineId, -qty);
-                if (mv.batch_id) {
-                    const { data: batch } = await supabase.from('vaccine_batches').select('*').eq('id', mv.batch_id).maybeSingle();
-                    if (batch && batch.id) {
-                        const newRem = Math.max(0, Number(batch.remaining_quantity) - qty);
-                        await supabase.from('vaccine_batches').update({ remaining_quantity: newRem }).eq('id', batch.id);
-                    }
-                }
-            } else if (mv.movement_type === 'distribute' || mv.movement_type === 'transfer') {
-                // reverse distribute/transfer: decrement destination, increment source
-                await adjustInventory(mv.to_wilaya, vaccineId, -qty);
-                await adjustInventory(mv.wilaya, vaccineId, qty);
-            } else if (mv.movement_type === 'waste') {
-                // reverse waste: add back quantity
-                await adjustInventory(mv.wilaya, vaccineId, qty);
-            } else if (mv.movement_type === 'adjust') {
+
+            // Deleting a movement: since inventory is derived from movements,
+            // removing the movement is sufficient to revert its effect. We no longer maintain batch records.
+            if (mv.movement_type === 'adjust') {
                 const ok = window.confirm("Ce mouvement est un ajustement. La suppression n'effectuera pas de correction automatique de l'inventaire. Continuer ?");
                 if (!ok) { setDeletingId(null); return; }
             }
 
-            const { error: delErr } = await supabase.from('stock_movements').delete().eq('id', id);
+            const { error: delErr } = await supabase.from('tb_vaccin_movements').delete().eq('id', id);
             if (delErr) throw delErr;
 
             await fetchInventory();
             await fetchMovements();
+            await fetchFilters();
             alert('Mouvement supprimé avec succès.');
         } catch (err) {
             console.error(err);
@@ -128,74 +248,34 @@ export default function AdminVaccinesStock() {
     // RECEIVE: create vaccine if needed, batch, update inventory, insert movement
     async function handleReceive(e: React.FormEvent) {
         e.preventDefault();
-        if (!rVaccineName || !rWilaya || !rQty || Number(rQty) <= 0) return alert("Veuillez remplir tous les champs requis et saisir une quantité valide.");
+        if (!rVaccineName || !rWilaya || !rQty || !rDate || Number(rQty) <= 0) return alert("Veuillez remplir tous les champs requis et saisir une quantité valide.");
 
         setLoading(true);
 
         try {
-            // upsert vaccine by name (name has UNIQUE constraint in migration)
-            const { data: vaccineData, error: upsertErr } = await supabase
-                .from("vaccines")
-                .upsert({ name: rVaccineName }, { onConflict: "name", returning: "representation" })
-                .select()
-                .maybeSingle(); // or .single() if you expect it to always exist
 
-            if (upsertErr) throw upsertErr;
-            const vaccineId = vaccineData?.id;
 
-            // insert batch
-            const { data: batchData, error: batchErr } = await supabase
-                .from("vaccine_batches")
-                .insert([{
-                    vaccine_id: vaccineId,
-                    batch_no: rBatchNo || `batch-${Date.now()}`,
-                    expiry_date: rExpiry || null,
-                    received_quantity: Number(rQty),
-                    remaining_quantity: Number(rQty),
-                }])
-                .select();
-
-            if (batchErr) throw batchErr;
-            const batchId = batchData[0].id;
-
-            // upsert inventory (wilaya + vaccine_id)
-            const { data: invExisting } = await supabase
-                .from("inventory")
-                .select("*")
-                .match({ vaccine_id: vaccineId, wilaya: rWilaya })
-                .single();
-
-            if (invExisting && invExisting.id) {
-                const newQty = Number(invExisting.quantity) + Number(rQty);
-                await supabase
-                    .from("inventory")
-                    .update({ quantity: newQty, last_updated: new Date().toISOString() })
-                    .eq("id", invExisting.id);
-            } else {
-                await supabase
-                    .from("inventory")
-                    .insert([{ vaccine_id: vaccineId, wilaya: rWilaya, quantity: Number(rQty) }]);
-            }
-
-            // insert stock_movement
-            await supabase.from("stock_movements").insert([{
+            // Insert a receive movement directly (store vaccine name and batch info inside movement)
+            await supabase.from("tb_vaccin_movements").insert([{
                 movement_type: "receive",
+                date: rDate,
                 wilaya: rWilaya,
-                vaccine_id: vaccineId,
-                batch_id: batchId,
+                vaccine_name: rVaccineName,
+                batch_no: rBatchNo || `batch-${Date.now()}`,
                 quantity: Number(rQty),
-                note: `Received via UI`,
             }]);
 
-            // refresh
+            // refresh both tables
             await fetchInventory();
+            await fetchMovements();
+            await fetchFilters();
 
             // reset form
             setRVaccineName("");
             setRBatchNo("");
-            setRExpiry("");
             setRQty("");
             setRWilaya("");
+            setRDate(new Date().toISOString().slice(0, 10));
         } catch (err) {
             console.error(err);
             alert("Échec de la réception. Consultez la console pour plus de détails.");
@@ -208,73 +288,39 @@ export default function AdminVaccinesStock() {
     async function handleDistribute(e: React.FormEvent) {
         e.preventDefault();
         if (!dVaccineName || !dFrom || !dTo || !dDate || !dQty || Number(dQty) <= 0) return alert("Veuillez remplir tous les champs requis (y compris la date) et saisir une quantité valide.");
+        if (dFrom === dTo) return alert("La wilaya source doit être différente de la wilaya de destination.");
 
         setLoading(true);
         try {
-            // find vaccine by name
-            const { data: vData } = await supabase
-                .from("vaccines")
-                .select("*")
-                .match({ name: dVaccineName })
-                .single();
-
-            if (!vData) return alert("Vaccin introuvable. Réceptionnez-le d'abord.");
-
-            const vaccineId = vData.id;
-
-            // check source inventory
-            const { data: fromInv } = await supabase
-                .from("inventory")
-                .select("*")
-                .match({ vaccine_id: vaccineId, wilaya: dFrom })
-                .single();
-
+            // compute current inventory from movements, ensure source has enough
+            const latestInv = await fetchInventory();
+            const fromInv = latestInv.find(it => it.wilaya === dFrom && it.vaccine_name === dVaccineName);
             if (!fromInv || Number(fromInv.quantity) < Number(dQty)) {
                 return alert("Stock insuffisant dans la wilaya source.");
             }
 
-            // decrement source
-            await supabase
-                .from("inventory")
-                .update({ quantity: Number(fromInv.quantity) - Number(dQty), last_updated: new Date().toISOString() })
-                .eq("id", fromInv.id);
-
-            // increment destination (upsert)
-            const { data: toInv } = await supabase
-                .from("inventory")
-                .select("*")
-                .match({ vaccine_id: vaccineId, wilaya: dTo })
-                .single();
-
-            if (toInv && toInv.id) {
-                await supabase
-                    .from("inventory")
-                    .update({ quantity: Number(toInv.quantity) + Number(dQty), last_updated: new Date().toISOString() })
-                    .eq("id", toInv.id);
-            } else {
-                await supabase
-                    .from("inventory")
-                    .insert([{ vaccine_id: vaccineId, wilaya: dTo, quantity: Number(dQty) }]);
-            }
-
-            // insert movement (transfer/distribute)
-            await supabase.from("stock_movements").insert([{
+            // insert distribute movement (store vaccine name directly)
+            await supabase.from("tb_vaccin_movements").insert([{
                 movement_type: "distribute",
                 date: dDate,
                 wilaya: dFrom,
                 to_wilaya: dTo,
-                vaccine_id: vaccineId,
+                vaccine_name: dVaccineName,
                 quantity: Number(dQty),
-                note: `Distribué via UI`,
             }]);
 
-            // refresh & reset
+            // refresh & reset (refresh movements too)
             await fetchInventory();
+            await fetchMovements();
+            await fetchFilters();
             setDVaccineName("");
             setDFrom("");
             setDTo("");
             setDQty("");
-            setDDate(new Date().toISOString().slice(0, 10));
+            // set default date to tomorrow
+            const _dt = new Date();
+            _dt.setDate(_dt.getDate() + 1);
+            setDDate(_dt.toISOString().slice(0, 10));
         } catch (err) {
             console.error(err);
             alert("Échec de la distribution. Consultez la console pour plus de détails.");
@@ -298,6 +344,60 @@ export default function AdminVaccinesStock() {
                                 <p className="text-gray-800">Chargement...</p>
                             ) : (
                                 <div className="overflow-x-auto">
+                                    <div className="flex flex-col md:flex-row gap-2 mb-2">
+                                        <select
+                                            className="border rounded-lg p-2 text-gray-800"
+                                            value={wilayaFilter}
+                                            onChange={(e) => setWilayaFilter(e.target.value)}
+                                        >
+                                            <option value="">Toutes les wilayas</option>
+                                            {availableWilayas.map((wilaya) => (
+                                                <option key={wilaya} value={wilaya}>
+                                                    {wilaya}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            className="border rounded-lg p-2 text-gray-800"
+                                            value={vaccineFilter}
+                                            onChange={(e) => setVaccineFilter(e.target.value)}
+                                        >
+                                            <option value="">Tous les vaccins</option>
+                                            {availableVaccines.map((vaccine) => (
+                                                <option key={vaccine} value={vaccine}>
+                                                    {vaccine}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div className="flex items-center gap-0">
+                                            <label className="text-gray-700">Avant le : </label>
+                                            <input
+                                                ref={dateFilterRef}
+                                                type="date"
+                                                className="border p-2 text-gray-800"
+                                                value={dateFilter}
+                                                onChange={(e) => setDateFilter(e.target.value)}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    dateFilterRef.current?.focus();
+                                                    if ((dateFilterRef.current as InputWithPicker)?.showPicker) {
+                                                        (dateFilterRef.current as InputWithPicker).showPicker();
+                                                    }
+                                                }}
+                                                className="p-2 bg-gray-800 border rounded-lg text-white hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                                                aria-label="Ouvrir le sélecteur de date"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                    </div>
+
+                                    {/* Filtered Inventory Table */}
                                     <table className="w-full text-sm">
                                         <thead>
                                             <tr className="text-left text-gray-500">
@@ -308,14 +408,24 @@ export default function AdminVaccinesStock() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {inventory.map((row) => (
-                                                <tr key={row.id} className="border-t">
-                                                    <td className="p-2 text-gray-800">{row.wilaya}</td>
-                                                    <td className="p-2 text-gray-800">{row.vaccine_name ?? row.vaccine_id}</td>
-                                                    <td className="p-2 text-gray-800">{row.quantity}</td>
-                                                    <td className="p-2 text-gray-800">{new Date(row.last_updated || row.created_at || Date.now()).toLocaleString('fr-FR')}</td>
-                                                </tr>
-                                            ))}
+                                            {inventory
+                                                .filter((row) =>
+                                                    // exclude zero quantities
+                                                    Number(row.quantity) !== 0 &&
+                                                    (wilayaFilter ? row.wilaya === wilayaFilter : true) &&
+                                                    (vaccineFilter ? row.vaccine_name === vaccineFilter : true) &&
+                                                    (dateFilter ? new Date(row.last_updated || row.created_at || Date.now()) <= new Date(dateFilter) : true)
+                                                )
+                                                .map((row) => (
+                                                    <tr key={row.id} className="border-t">
+                                                        <td className="p-2 text-gray-800">{row.wilaya}</td>
+                                                        <td className="p-2 text-gray-800">{row.vaccine_name}</td>
+                                                        <td className="p-2 text-gray-800">{row.quantity}</td>
+                                                        <td className="p-2 text-gray-800">
+                                                            {new Date(row.last_updated || row.created_at || Date.now()).toLocaleString('fr-FR')}
+                                                        </td>
+                                                    </tr>
+                                                ))}
                                         </tbody>
                                     </table>
                                 </div>
@@ -327,27 +437,31 @@ export default function AdminVaccinesStock() {
                             <div className="bg-white p-4 rounded shadow">
                                 <h2 className="font-semibold mb-2 text-gray-800">Réceptionner un lot</h2>
                                 <form onSubmit={handleReceive} className="space-y-2">
-                                    <input className="w-full border p-2 text-gray-800 placeholder-gray-500" placeholder="Nom du vaccin" value={rVaccineName} onChange={(e) => setRVaccineName(e.target.value)} />
+                                    <input list="vaccines-list" className="w-full border p-2 text-gray-800 placeholder-gray-500" placeholder="Nom du vaccin" value={rVaccineName} onChange={(e) => setRVaccineName(e.target.value)} aria-label="Nom du vaccin" />
+                                    <datalist id="vaccines-list">
+                                        {availableVaccines.map((v) => (
+                                            <option key={v} value={v} />
+                                        ))}
+                                    </datalist>
                                     <input className="w-full border p-2 text-gray-800 placeholder-gray-500" placeholder="Lot (optionnel)" value={rBatchNo} onChange={(e) => setRBatchNo(e.target.value)} />
+
                                     <div className="flex items-center gap-2">
                                         <input
-                                            ref={rExpiryRef}
-                                            id="rExpiry"
-                                            className="w-full border p-2 text-gray-800 placeholder-gray-500"
+                                            ref={rDateRef}
                                             type="date"
-                                            value={rExpiry}
-                                            onChange={(e) => setRExpiry(e.target.value)}
+                                            className="w-full border p-2 text-gray-800 placeholder-gray-500"
+                                            value={rDate}
+                                            onChange={(e) => setRDate(e.target.value)}
                                         />
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                rExpiryRef.current?.focus();
-                                                // showPicker() available in some browsers
-                                                if ((rExpiryRef.current as any)?.showPicker) {
-                                                    (rExpiryRef.current as any).showPicker();
+                                                rDateRef.current?.focus();
+                                                if ((rDateRef.current as InputWithPicker)?.showPicker) {
+                                                    (rDateRef.current as InputWithPicker).showPicker();
                                                 }
                                             }}
-                                            className="p-2 bg-gray-100 border rounded text-gray-700"
+                                            className="p-2 bg-gray-800 border rounded text-white hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                                             aria-label="Ouvrir le sélecteur de date"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -355,6 +469,7 @@ export default function AdminVaccinesStock() {
                                             </svg>
                                         </button>
                                     </div>
+
                                     <input className="w-full border p-2 text-gray-800 placeholder-gray-500" type="number" placeholder="Quantité" value={rQty} onChange={(e) => setRQty(Number(e.target.value))} />
                                     <div className="flex items-center">
                                         <WilayaComboBox value={rWilaya} onChange={setRWilaya} />
@@ -366,7 +481,7 @@ export default function AdminVaccinesStock() {
                             <div className="bg-white p-4 rounded shadow">
                                 <h2 className="font-semibold mb-2 text-gray-800">Distribuer</h2>
                                 <form onSubmit={handleDistribute} className="space-y-2">
-                                    <input className="w-full border p-2 text-gray-800 placeholder-gray-500" placeholder="Nom du vaccin (existant)" value={dVaccineName} onChange={(e) => setDVaccineName(e.target.value)} />
+                                    <input list="vaccines-list" className="w-full border p-2 text-gray-800 placeholder-gray-500" placeholder="Nom du vaccin (existant)" value={dVaccineName} onChange={(e) => setDVaccineName(e.target.value)} aria-label="Nom du vaccin (existant)" />
                                     <div className="flex gap-2">
                                         <div className="flex flex-col w-1/2">
                                             <label className="text-gray-700 mb-1">De :</label>
@@ -394,11 +509,11 @@ export default function AdminVaccinesStock() {
                                                     type="button"
                                                     onClick={() => {
                                                         dDateRef.current?.focus();
-                                                        if ((dDateRef.current as any)?.showPicker) {
-                                                            (dDateRef.current as any).showPicker();
+                                                        if ((dateFilterRef.current as InputWithPicker)?.showPicker) {
+                                                            (dateFilterRef.current as InputWithPicker).showPicker();
                                                         }
                                                     }}
-                                                    className="p-2 bg-gray-100 border rounded text-gray-700"
+                                                    className="p-2 bg-gray-800 border rounded text-white hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                                                     aria-label="Ouvrir le sélecteur de date"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -410,7 +525,8 @@ export default function AdminVaccinesStock() {
                                     </div>
 
                                     <input className="w-full border p-2 text-gray-800 placeholder-gray-500" type="number" placeholder="Quantité" value={dQty} onChange={(e) => setDQty(Number(e.target.value))} />
-                                    <button className="mt-2 bg-green-600 text-white px-4 py-2 rounded" type="submit" disabled={loading}>Distribuer</button>
+                                    <button className="mt-2 bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50" type="submit" disabled={loading || (dFrom !== "" && dFrom === dTo)}>Distribuer</button>
+                                    {(dFrom !== "" && dTo !== "" && dFrom === dTo) && <p className="text-red-600 text-sm mt-1">La wilaya source doit être différente de la wilaya de destination.</p>}
                                 </form>
                             </div>
 
@@ -423,6 +539,53 @@ export default function AdminVaccinesStock() {
                     {/* Stock movements journal */}
                     <div className="bg-white p-4 rounded shadow mt-6">
                         <h2 className="font-semibold mb-2 text-gray-800">Journal des mouvements</h2>
+
+                        {/* Movement filters */}
+                        <div className="flex flex-col md:flex-row gap-2 mb-4 items-center">
+                            <select
+                                className="border rounded-lg p-2 text-gray-800"
+                                value={mvWilayaFilter}
+                                onChange={(e) => setMvWilayaFilter(e.target.value)}
+                            >
+                                <option value="">Toutes les wilayas</option>
+                                {availableWilayas.map((w) => (
+                                    <option key={w} value={w}>{w}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                className="border rounded-lg p-2 text-gray-800"
+                                value={mvVaccineFilter}
+                                onChange={(e) => setMvVaccineFilter(e.target.value)}
+                            >
+                                <option value="">Tous les vaccins</option>
+                                {availableVaccines.map((v) => (
+                                    <option key={v} value={v}>{v}</option>
+                                ))}
+                            </select>
+
+                            <label className="flex items-center gap-2">
+                                <input type="checkbox" checked={mvDateEnabled} onChange={(e) => setMvDateEnabled(e.target.checked)} />
+                                <span className="text-gray-700">Période</span>
+                            </label>
+
+                            <input
+                                type="date"
+                                className={`border p-2 transition-colors ${mvDateEnabled ? 'text-gray-800 bg-white' : 'text-gray-400 bg-gray-100 cursor-not-allowed'}`}
+                                value={mvDateFrom}
+                                onChange={(e) => setMvDateFrom(e.target.value)}
+                                disabled={!mvDateEnabled}
+                            />
+
+                            <input
+                                type="date"
+                                className={`border p-2 transition-colors ${mvDateEnabled ? 'text-gray-800 bg-white' : 'text-gray-400 bg-gray-100 cursor-not-allowed'}`}
+                                value={mvDateTo}
+                                onChange={(e) => setMvDateTo(e.target.value)}
+                                disabled={!mvDateEnabled}
+                            />
+                        </div>
+
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-gray-800">
                                 <thead>
@@ -433,47 +596,51 @@ export default function AdminVaccinesStock() {
                                         <th className="p-2 text-gray-700">À</th>
                                         <th className="p-2 text-gray-700">Vaccin</th>
                                         <th className="p-2 text-gray-700">Quantité</th>
-                                        <th className="p-2 text-gray-700">Note</th>
                                         <th className="p-2 text-gray-700">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {movements.map((mv) => (
-                                        <tr key={mv.id} className="border-t">
-                                            <td className="p-2 text-gray-800">{new Date(mv.date).toLocaleString('fr-FR')}</td>
-                                            <td className="p-2 text-gray-800">{(() => {
-                                                switch (mv.movement_type) {
-                                                    case 'receive': return 'Réception';
-                                                    case 'distribute': return 'Distribution';
-                                                    case 'transfer': return 'Transfert';
-                                                    case 'adjust': return 'Ajustement';
-                                                    case 'waste': return 'Perte';
-                                                    default: return mv.movement_type;
-                                                }
-                                            })()}</td>
-                                            <td className="p-2 text-gray-800">{mv.wilaya}</td>
-                                            <td className="p-2 text-gray-800">{mv.to_wilaya ?? '-'}</td>
-                                            <td className="p-2 text-gray-800">{mv.vaccines?.name ?? mv.vaccine_id}</td>
-                                            <td className="p-2 text-gray-800">{mv.quantity}</td>
-                                            <td className="p-2 text-gray-800">{mv.note ?? ''}</td>
-                                            <td className="p-2">
-                                                <button
-                                                    className="text-red-600 hover:text-red-800 disabled:opacity-50"
-                                                    onClick={() => handleDeleteMovement(mv.id)}
-                                                    disabled={deletingId === mv.id}
-                                                >
-                                                    Supprimer
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {movements
+                                        .filter((mv) =>
+                                            (mvWilayaFilter ? mv.wilaya === mvWilayaFilter : true) &&
+                                            (mvVaccineFilter ? (mv.vaccine_name ?? '') === mvVaccineFilter : true) &&
+                                            (!mvDateEnabled ? true : ((mvDateFrom ? new Date(mv.date ?? '') >= new Date(mvDateFrom) : true) && (mvDateTo ? new Date(mv.date ?? '') <= new Date(mvDateTo) : true)))
+                                        )
+                                        .map((mv) => (
+                                            <tr key={mv.id} className="border-t">
+                                                <td className="p-2 text-gray-800">{new Date(mv.date ?? '').toLocaleString('fr-FR')}</td>
+                                                <td className="p-2 text-gray-800">{(() => {
+                                                    switch (mv.movement_type) {
+                                                        case 'receive': return 'Réception';
+                                                        case 'distribute': return 'Distribution';
+                                                        case 'transfer': return 'Transfert';
+                                                        case 'adjust': return 'Ajustement';
+                                                        case 'waste': return 'Perte';
+                                                        default: return mv.movement_type;
+                                                    }
+                                                })()}</td>
+                                                <td className="p-2 text-gray-800">{mv.wilaya}</td>
+                                                <td className="p-2 text-gray-800">{mv.to_wilaya ?? '-'}</td>
+                                                <td className="p-2 text-gray-800">{mv.vaccine_name}</td>
+                                                <td className="p-2 text-gray-800">{mv.quantity}</td>
+                                                <td className="p-2">
+                                                    <button
+                                                        className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                                                        onClick={() => handleDeleteMovement(mv.id)}
+                                                        disabled={deletingId === mv.id}
+                                                    >
+                                                        Supprimer
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-            </main>
+            </main >
             <PgFooter />
-        </div>
+        </div >
     );
 }
