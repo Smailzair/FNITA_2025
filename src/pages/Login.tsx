@@ -11,6 +11,7 @@ type LoginError =
   | "email-not-confirmed"
   | "wrong-captcha"
   | "confirmation-resent"
+  | "no-internet"
   | null;
 
 export default function Login() {
@@ -75,6 +76,12 @@ export default function Login() {
     setLoading(true);
     clearErrors();
 
+    if (!navigator.onLine) {
+      setError("no-internet");
+      setLoading(false);
+      return;
+    }
+
     if (loginAttempts >= 3) {
       if (captchaInput.toUpperCase() !== captchaCode) {
         setError("wrong-captcha");
@@ -92,8 +99,20 @@ export default function Login() {
       .eq("email", formData.email.trim())
       .single();
 
-    // If no user is found with that email, set an error and stop.
-    if (fetchError || !existingUser) {
+    if (fetchError) {
+      // PGRST116 is the specific error code for "No rows found" (Email not registered)
+      if (fetchError.code === "PGRST116") {
+        setError("email-not-found");
+        setLoginAttempts((prev) => prev + 1);
+      } else {
+        // Any other error is likely a connection or server issue
+        setError("no-internet");
+      }
+      setLoading(false);
+      return;
+    }
+
+    if (!existingUser) {
       setError("email-not-found");
       setLoginAttempts((prev) => prev + 1);
       setLoading(false);
@@ -196,8 +215,8 @@ export default function Login() {
               <span>Email : </span>
               <input
                 className={`m-1 rounded-md text-black pl-1 ${error === "email-not-confirmed"
-                    ? "bg-orange-400"
-                    : "bg-gray-300"
+                  ? "bg-orange-400"
+                  : "bg-gray-300"
                   }`}
                 type="email"
                 name="email"
@@ -378,6 +397,11 @@ export default function Login() {
               {error === "wrong-captcha" && (
                 <p className="text-red-400 text-center text-xs font-semibold mr-4">
                   Code de sécurité incorrect.
+                </p>
+              )}
+              {error === "no-internet" && (
+                <p className="text-red-400 text-center text-xs font-semibold mr-4">
+                  Pas de connexion internet.
                 </p>
               )}
             </div>

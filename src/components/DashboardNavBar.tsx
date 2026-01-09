@@ -129,6 +129,15 @@ const vetLinks = [
   },
 ];
 
+const ayDroitLinks = [
+  { to: "/aydroitdashboard", title: "Tableau de Bord", icon: <HomeIcon /> },
+  {
+    to: "/DeclareAnimalLost",
+    title: "Signaler un Animal Perdu/Retrouvé",
+    icon: <LostAnimalIcon />,
+  },
+];
+
 interface DashboardNavBarProps {
   role: string | null;
 }
@@ -143,7 +152,8 @@ export default function DashboardNavBar({ role }: DashboardNavBarProps) {
         return adminLinks;
       case UserRole.Vet:
         return vetLinks;
-      // Add cases for other roles like AyDroit if needed
+      case UserRole.AyDroit:
+        return ayDroitLinks;
       default:
         return []; // Return empty or a default set of links
     }

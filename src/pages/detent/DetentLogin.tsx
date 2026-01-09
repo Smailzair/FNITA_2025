@@ -41,7 +41,7 @@ export default function DetentLogin() {
 
   useEffect(() => {
     generateCaptcha();
-    const interval = setInterval(generateCaptcha, 20000);
+    const interval = setInterval(generateCaptcha, 40000);
     return () => clearInterval(interval);
   }, []);
 
