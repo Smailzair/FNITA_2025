@@ -311,27 +311,18 @@ export default function ManageUsers() {
         cellStyle: { textAlign: "center" },
         render: (user) => (
           <div className="flex flex-col items-center gap-2">
-            {currentUserType === "Vétérinaire" ? (
-              <>
-                <span
-                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    user.validated
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {user.validated ? "Validé" : "Non validé"}
-                </span>
-                <ValidationToggle
-                  user={user} // Corrected prop name from 'vet' to 'user'
-                  onToggle={handleValidationToggle}
-                />
-              </>
-            ) : (
-              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                N/A
-              </span>
-            )}
+            <span
+              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.validated
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+                }`}
+            >
+              {user.validated ? "Validé" : "Non validé"}
+            </span>
+            <ValidationToggle
+              user={user}
+              onToggle={handleValidationToggle}
+            />
           </div>
         ),
       },
@@ -356,11 +347,10 @@ export default function ManageUsers() {
                 <button
                   key={tab.type}
                   onClick={() => setCurrentUserType(tab.type)}
-                  className={`${
-                    tab.type === currentUserType
-                      ? "border-cyan-500 text-cyan-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                  className={`${tab.type === currentUserType
+                    ? "border-cyan-500 text-cyan-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
                 >
                   {tab.label}
                 </button>
@@ -399,30 +389,26 @@ export default function ManageUsers() {
             >
               Supprimer
             </button>
-            {currentUserType === "Vétérinaire" && (
-              <>
-                <div className="h-8 border-l border-gray-300 mx-2" />
-                <button
-                  onClick={() => handleBulkStatusChange(true)}
-                  disabled={
-                    !selectionStatus.canValidate || processedUsers.length === 0
-                  }
-                  className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-800"
-                >
-                  Valider
-                </button>
-                <button
-                  onClick={() => handleBulkStatusChange(false)}
-                  disabled={
-                    !selectionStatus.canInvalidate ||
-                    processedUsers.length === 0
-                  }
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-800"
-                >
-                  Invalider
-                </button>
-              </>
-            )}
+            <div className="h-8 border-l border-gray-300 mx-2" />
+            <button
+              onClick={() => handleBulkStatusChange(true)}
+              disabled={
+                !selectionStatus.canValidate || processedUsers.length === 0
+              }
+              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-800"
+            >
+              Valider
+            </button>
+            <button
+              onClick={() => handleBulkStatusChange(false)}
+              disabled={
+                !selectionStatus.canInvalidate ||
+                processedUsers.length === 0
+              }
+              className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-800"
+            >
+              Invalider
+            </button>
 
             {showDeleteRequestNotification && filterStatus === "all" && (
               <label
@@ -526,9 +512,8 @@ const ValidationToggle = ({
       />
       <div className="block bg-gray-600 w-14 h-8 rounded-full"></div>
       <div
-        className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${
-          user.validated ? "translate-x-6" : ""
-        }`}
+        className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${user.validated ? "translate-x-6" : ""
+          }`}
       ></div>
     </div>
   </label>

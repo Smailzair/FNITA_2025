@@ -10,6 +10,7 @@ type LoginError =
   | "email-not-found"
   | "email-not-confirmed"
   | "wrong-captcha"
+  | "confirmation-resent"
   | null;
 
 export default function Login() {
@@ -87,7 +88,7 @@ export default function Login() {
     // First, check if the email exists in the public profile table.
     const { data: existingUser, error: fetchError } = await supabase
       .from("tb_login")
-      .select("id")
+      .select("id, created_at")
       .eq("email", formData.email.trim())
       .single();
 
@@ -109,7 +110,20 @@ export default function Login() {
     if (signInError) {
       console.error("Sign-in error:", signInError);
       if (signInError.message === "Email not confirmed") {
-        setError("email-not-confirmed");
+        const createdAt = new Date(existingUser.created_at);
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+        if (createdAt < oneMonthAgo) {
+          await supabase.from("tb_login").delete().eq("id", existingUser.id);
+          setError("email-not-found");
+        } else {
+          await supabase.auth.resend({
+            type: "signup",
+            email: formData.email.trim(),
+          });
+          setError("confirmation-resent");
+        }
       } else if (signInError.message === "Invalid login credentials") {
         // Since we've confirmed the email exists, this error must mean the password is wrong.
         setError("wrong-password");
@@ -181,11 +195,10 @@ export default function Login() {
             <li>
               <span>Email : </span>
               <input
-                className={`m-1 rounded-md text-black pl-1 ${
-                  error === "email-not-confirmed"
+                className={`m-1 rounded-md text-black pl-1 ${error === "email-not-confirmed"
                     ? "bg-orange-400"
                     : "bg-gray-300"
-                }`}
+                  }`}
                 type="email"
                 name="email"
                 placeholder="Email"
@@ -199,9 +212,8 @@ export default function Login() {
             <li className="flex flex-row justify-end">
               <span>Mot de passe : </span>
               <input
-                className={`m-1 rounded-md text-black pl-1 ${
-                  error === "wrong-password" ? "bg-red-400" : "bg-gray-300"
-                }`}
+                className={`m-1 rounded-md text-black pl-1 ${error === "wrong-password" ? "bg-red-400" : "bg-gray-300"
+                  }`}
                 type={ShowPass ? "text" : "password"}
                 name="password"
                 placeholder="Mot de passe"
@@ -222,9 +234,8 @@ export default function Login() {
                 onClick={() => {
                   SetshowPass(!ShowPass);
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${
-                  ShowPass ? "hidden" : ""
-                }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${ShowPass ? "hidden" : ""
+                  }`}
               >
                 <path
                   strokeLinecap="round"
@@ -249,9 +260,8 @@ export default function Login() {
                 onClick={() => {
                   SetshowPass(!ShowPass);
                 }}
-                className={`mt-1 mr-1 absolute text-gray-700 ${
-                  !ShowPass ? "hidden" : ""
-                }`}
+                className={`mt-1 mr-1 absolute text-gray-700 ${!ShowPass ? "hidden" : ""
+                  }`}
               >
                 <path
                   strokeLinecap="round"
@@ -296,9 +306,8 @@ export default function Login() {
                 <div className="flex flex-row justify-end items-center">
                   <span>Code : </span>
                   <input
-                    className={`m-1 rounded-md text-black pl-1 ${
-                      error === "wrong-captcha" ? "bg-red-400" : "bg-gray-300"
-                    }`}
+                    className={`m-1 rounded-md text-black pl-1 ${error === "wrong-captcha" ? "bg-red-400" : "bg-gray-300"
+                      }`}
                     type="text"
                     value={captchaInput}
                     onChange={(e) => setCaptchaInput(e.target.value)}
@@ -314,9 +323,8 @@ export default function Login() {
             <div className="flew flex-col">
               {error === "email-not-found" && (
                 <Link
-                  to={`/Register${
-                    formData.email ? "?email=" + formData.email : ""
-                  }`}
+                  to={`/Register${formData.email ? "?email=" + formData.email : ""
+                    }`}
                   className="text-yellow-400 text-center text-xs flex font-semibold mr-4"
                 >
                   Email non enregistré
@@ -358,6 +366,13 @@ export default function Login() {
                   Veuillez confirmer votre e-mail
                   <br />
                   avant de vous connecter.
+                </h1>
+              )}
+              {error === "confirmation-resent" && (
+                <h1 className="text-yellow-400 text-center text-xs flex font-semibold mr-4">
+                  Compte non confirmé.
+                  <br />
+                  Un nouvel email a été envoyé.
                 </h1>
               )}
               {error === "wrong-captcha" && (

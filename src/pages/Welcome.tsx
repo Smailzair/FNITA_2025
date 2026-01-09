@@ -231,20 +231,20 @@ export default function Home() {
 
               <hr className="my-4 border-white/40" />
               <ActionButton
-                to="/vetsdashboard"
+                to="/login"
                 icon={VetsIcon}
                 title="Espace Vétérinaire"
                 subtitle="Accès réservé aux vétérinaires pour la gestion des identifications et des dossiers médicaux."
               />
               <ActionButton
-                to="/aydroitdashboard"
+                to="/login"
                 icon={AyantDroitIcon}
                 title="Espace Ayant-Droit"
                 subtitle="Accès réservé aux forces de l'ordre, fourrières, et autres entités autorisées."
               />
 
               <ActionButton
-                to="/admindashboard"
+                to="/login"
                 icon={AdminIcon}
                 title="Espace Administrateur"
                 subtitle="Accès réservé aux administrateurs du Fichier National d'Identification."

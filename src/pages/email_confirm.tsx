@@ -43,9 +43,39 @@ export default function EmailConfirm() {
           `La vérification a échoué. Le lien a peut-être expiré ou a déjà été utilisé.`
         );
         console.error("Confirmation Error:", error);
-      } else if (data && typeof data === "object" && "user" in data) {
-        setStatus("success");
-        setMessage(`Votre compte est maintenant confirmé !`);
+      } else if (data?.user) {
+        const createdAt = new Date(data.user.created_at);
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+        if (createdAt < oneMonthAgo) {
+          // Account is older than one month. Delete it from the public profile table.
+          const { error: deleteError } = await supabase
+            .from("tb_login")
+            .delete()
+            .eq("id", data.user.id);
+
+          // Sign out any session that might have been created by verifyOtp
+          await supabase.auth.signOut();
+
+          if (deleteError) {
+            console.error("Error deleting expired user profile:", deleteError);
+            setStatus("error");
+            setMessage(
+              "Une erreur est survenue. Votre compte est trop ancien et n'a pas pu être nettoyé. Veuillez contacter le support."
+            );
+            return;
+          }
+
+          setStatus("error");
+          setMessage(
+            "Le lien de confirmation a expiré car le compte a été créé il y a plus d'un mois. Veuillez vous réinscrire."
+          );
+        } else {
+          // Account is within the valid period.
+          setStatus("success");
+          setMessage(`Votre compte est maintenant confirmé !`);
+        }
       } else {
         setStatus("error");
         setMessage("Une erreur inattendue est survenue.");
