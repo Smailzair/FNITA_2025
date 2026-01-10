@@ -81,6 +81,15 @@ export default function ManageUsers() {
 
   const handleValidationToggle = useCallback(
     async (id: string, currentStatus: boolean | null) => {
+      // Ensure at least one administrator remains validated
+      if (currentUserType === "Administrateur" && currentStatus === true) {
+        const validatedAdminsCount = users.filter((u) => u.validated).length;
+        if (validatedAdminsCount <= 1) {
+          alert("Action refusée : Il doit rester au moins un administrateur validé.");
+          return;
+        }
+      }
+
       try {
         const { error: updateError } = await supabase
           .from("tb_login")
@@ -102,7 +111,7 @@ export default function ManageUsers() {
         console.error("Error updating validation status:", err);
       }
     },
-    []
+    [currentUserType, users]
   );
 
   const processedUsers = useMemo(() => {
@@ -215,6 +224,19 @@ export default function ManageUsers() {
     async (newStatus: boolean) => {
       if (selectedVetIds.length === 0) return;
 
+      // Ensure at least one administrator remains validated
+      if (currentUserType === "Administrateur" && newStatus === false) {
+        const validatedAdminsCount = users.filter((u) => u.validated).length;
+        const selectedValidatedAdminsCount = users.filter(
+          (u) => selectedVetIds.includes(u.id) && u.validated
+        ).length;
+
+        if (validatedAdminsCount - selectedValidatedAdminsCount < 1) {
+          alert("Action refusée : Il doit rester au moins un administrateur validé.");
+          return;
+        }
+      }
+
       try {
         const { error: updateError } = await supabase
           .from("tb_login")
@@ -229,10 +251,23 @@ export default function ManageUsers() {
         console.error("Error updating validation status:", err);
       }
     },
-    [selectedVetIds, fetchUsers]
+    [selectedVetIds, fetchUsers, currentUserType, users]
   );
 
   const handleDeleteClick = useCallback(async () => {
+    // Ensure at least one administrator remains validated
+    if (currentUserType === "Administrateur") {
+      const validatedAdminsCount = users.filter((u) => u.validated).length;
+      const selectedValidatedAdminsCount = users.filter(
+        (u) => selectedVetIds.includes(u.id) && u.validated
+      ).length;
+
+      if (validatedAdminsCount - selectedValidatedAdminsCount < 1) {
+        alert("Suppression refusée : Il doit rester au moins un administrateur validé.");
+        return;
+      }
+    }
+
     if (
       selectedVetIds.length > 0 &&
       window.confirm(
@@ -255,7 +290,7 @@ export default function ManageUsers() {
         console.error("Error deleting user:", err);
       }
     }
-  }, [selectedVetIds, fetchUsers]);
+  }, [selectedVetIds, fetchUsers, currentUserType, users]);
 
   const handleEditFormClose = useCallback(() => {
     setShowEditForm(false);
